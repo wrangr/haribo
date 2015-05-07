@@ -59,11 +59,6 @@ function isExternal(page, href) {
 }
 
 
-function extractTitle($html) {
-  return $html('title').text();
-}
-
-
 function extractMeta($html) {
   return _.compact($html('meta').map(function (i, meta) {
     var $meta = $(meta);
@@ -101,17 +96,6 @@ function extractLinks($html, page) {
 
   return links;
 }
-
-
-function removeEscapedFragment(uri) {
-  var urlParts = uri.split('?');
-  var qsObj = qs.parse(urlParts[1]);
-  delete qsObj._escaped_fragment_;
-  var cleanUrl = urlParts[0];
-  if (Object.keys(qsObj).length) { cleanUrl += '?' + qs.stringify(qsObj); }
-  return cleanUrl;
-}
-
 
 
 module.exports = function (uri, opt) {
@@ -210,7 +194,7 @@ module.exports = function (uri, opt) {
 
         // Extract stuff from dom...
         var $html = $.load(page.body);
-        page.title = extractTitle($html);
+        page.title = $html('title').text();
         page.meta = extractMeta($html);
         page.links = extractLinks($html, page);
 
