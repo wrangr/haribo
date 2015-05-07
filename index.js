@@ -1,9 +1,9 @@
 var url = require('url');
 var EventEmitter = require('events').EventEmitter;
+var validate = require('har-validator');
 var normalize = require('normalizeurl');
 var $ = require('cheerio');
 var _ = require('lodash');
-var which = require('which');
 var pkg = require('./package.json');
 var fetch = require('./lib/fetch');
 
@@ -138,11 +138,35 @@ module.exports = function (options) {
   var pages = har.pages = [];
 
 
+  function emitHar() {
+    var json = {
+      log: _.extend({}, har, {
+        entries: har.entries.filter(function (entry) {
+          return entry._ignore !== true;
+        })
+      })
+    };
+
+    var stringified = JSON.stringify(json);
+    var parsed = JSON.parse(stringified);
+
+    validate(parsed, function (err, valid) {
+      if (err) {
+        ee.emit('harError', err, json);
+      } else if (!valid) {
+        ee.emit('harInvalid', json);
+      } else {
+        ee.emit('har', json);
+      }
+    });
+  }
+
+
   function done(err) {
     if (err) {
       ee.emit('error', err);
     } else {
-      ee.emit('har', { log: har });
+      emitHar();
       ee.emit('end');
     }
     return ee;
