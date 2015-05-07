@@ -26,7 +26,7 @@ wrangr 2015
 ## Programmatically
 
 ```sh
-npm install haribo
+npm install --save haribo
 ```
 
 ```js

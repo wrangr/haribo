@@ -41,7 +41,7 @@ ee.on('error', function (err) {
 
 ee.on('harError', function (harError, har) {
   console.error(harError);
-  console.error(har.log.pages);
+  console.error(har.log);
   process.exit(2);
 });
 

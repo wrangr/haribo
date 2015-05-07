@@ -31,8 +31,11 @@ describe('haribo', function () {
     var baseurl = 'http://127.0.0.1:12345/';
 
     haribo({ url: baseurl })
+      .on('error', function (err) {
+        console.error('error', err);
+      })
       .on('harError', function (harError) {
-        console.error(harError);
+        console.error('harError', harError);
       })
       .on('har', function (har) {
         console.log(har);
