@@ -1,5 +1,4 @@
 var url = require('url');
-var qs = require('querystring');
 var EventEmitter = require('events').EventEmitter;
 var Nightmare = require('nightmare');
 var normalize = require('normalizeurl');
@@ -7,23 +6,40 @@ var $ = require('cheerio');
 var _ = require('lodash');
 
 
-var phantomEvents = [
-  'initialized',
-  'loadStarted',
-  'loadFinished',
-  'urlChanged',
-  'navigationRequested',
-  'resourceRequestStarted',
-  'resourceRequested',
-  'resourceReceived',
-  'resourceError',
-  'consoleMessage',
-  'alert',
-  'confirm',
-  'prompt',
-  'error',
-  'timeout'
-];
+//
+// Parse given URL to get protocol and domain.
+//
+function parseResourceUrl(resource) {
+  if (resource.url.indexOf('data:') === 0) {
+    // base64 encoded data
+    resource.domain = false;
+    resource.protocol = false;
+    resource.isBase64 = true;
+    return;
+  }
+
+  var parsed = url.parse(resource.url);
+
+  resource.protocol = parsed.protocol.replace(':', '');
+  resource.domain = parsed.hostname;
+  resource.query = parsed.query;
+
+  if (resource.protocol === 'https') {
+    resource.isSSL = true;
+  }
+}
+
+
+function parseResource(resource) {
+  resource.headers = _.reduce(resource.headers, function (memo, header) {
+    memo[header.name.toLowerCase()] = header.value;
+    return memo;
+  }, {});
+
+  if (typeof resource.time === 'string') {
+    resource.time = new Date(resource.time);
+  }
+}
 
 
 function href2url($html, page, href) {
@@ -98,75 +114,168 @@ function extractLinks($html, page) {
 }
 
 
-module.exports = function (uri, opt) {
+function createHar(page) {
+  var entries = [];
 
-  opt = opt || {};
+  page.resources.forEach(function (resource) {
+    var request = resource.request;
+    var startReply = resource.startReply;
+    var endReply = resource.endReply;
+
+    if (!request || !startReply || !endReply) { return; }
+
+    // Exclude Data URI from HAR file because they aren't included in spec
+    if (request.url.match(/(^data:image\/.*)/i)) { return; }
+
+    var requestTime = new Date(request.time);
+    var startReplyTime = new Date(startReply.time);
+    var endReplyTime = new Date(endReply.time);
+
+    entries.push({
+      startedDateTime: requestTime,
+      time: endReplyTime - requestTime,
+      request: {
+        method: request.method,
+        url: request.url,
+        httpVersion: "HTTP/1.1",
+        cookies: [],
+        headers: request.headers,
+        queryString: [],
+        headersSize: -1,
+        bodySize: -1
+      },
+      response: {
+        status: endReply.status,
+        statusText: endReply.statusText,
+        httpVersion: "HTTP/1.1",
+        cookies: [],
+        headers: endReply.headers,
+        redirectURL: "",
+        headersSize: -1,
+        bodySize: startReply.bodySize,
+        content: {
+          size: startReply.bodySize,
+          mimeType: endReply.contentType
+        }
+      },
+      cache: {},
+      timings: {
+        blocked: 0,
+        dns: -1,
+        connect: -1,
+        send: 0,
+        wait: startReplyTime - requestTime,
+        receive: endReplyTime - startReplyTime,
+        ssl: -1
+      },
+      pageref: page.url
+    });
+  });
+
+  return {
+    log: {
+      version: '1.2',
+      creator: {
+        name: "PhantomJS",
+        //version: phantom.version.major + '.' + phantom.version.minor +
+        //  '.' + phantom.version.patch
+      },
+      pages: [{
+        startedDateTime: page.startTime.toISOString(),
+        id: page.url,
+        title: page.title,
+        pageTimings: {
+          onLoad: page.endTime - page.startTime
+        }
+      }],
+      entries: entries
+    }
+  };
+}
+
+
+function isExcluded(settings, uri) {
+  return settings.exclude.reduce(function (memo, pattern) {
+    // If exclude pattern has already been matched we skip.
+    if (memo) { return memo; }
+    // Initialise string patterns as regular expressions.
+    if (typeof pattern === 'string') { pattern = new RegExp(pattern); }
+    // Get relative url (relative to the baseurl).
+    var relativeUri = uri.replace(new RegExp('^' + settings.url), '');
+    return pattern.test(relativeUri);
+  }, false);
+}
+
+
+function isIncluded(settings, uri) {
+  if (!settings.include.length) { return true; }
+  return settings.include.reduce(function (memo, pattern) {
+    if (memo) { return memo; }
+    if (typeof pattern === 'string') { pattern = new RegExp(pattern); }
+    var relativeUri = uri.replace(new RegExp('^' + settings.url), '');
+    // Base URL itself can not be excluded by not being included...
+    if (!relativeUri) { return true; }
+    return pattern.test(relativeUri);
+  }, false);
+}
+
+
+module.exports = function (options, cb) {
+
+  // Initialise settings with defaults.
+  var settings = _.extend({
+    max: 1,
+    exclude: [],
+    include: []
+  }, options);
+
+  cb = cb || function () {};
+
 
   var ee = new EventEmitter();
   var nightmare = new Nightmare();
-
-  // Keep track of relative pathname to be able to scan a single file or a
-  // subdirectory.
-  var baseurl = uri;
-  var urlObj = url.parse(uri);
   var pages = [];
-  var max = opt.max || 1;
-  var exclude = opt.exclude || [];
-  var include = opt.include || [];
 
 
-  function isExcluded(uri) {
-    return exclude.reduce(function (memo, pattern) {
-      // If exclude pattern has already been matched we skip.
-      if (memo) { return memo; }
-      // Initialise string patterns as regular expressions.
-      if (typeof pattern === 'string') { pattern = new RegExp(pattern); }
-      // Get relative url (relative to the baseurl).
-      var relativeUri = uri.replace(new RegExp('^' + baseurl), '');
-      return pattern.test(relativeUri);
-    }, false);
-  }
-
-
-  function isIncluded(uri) {
-    if (!include.length) { return true; }
-    return include.reduce(function (memo, pattern) {
-      if (memo) { return memo; }
-      if (typeof pattern === 'string') { pattern = new RegExp(pattern); }
-      var relativeUri = uri.replace(new RegExp('^' + baseurl), '');
-      // Base URL itself can not be excluded by not being included...
-      if (!relativeUri) { return true; }
-      return pattern.test(relativeUri);
-    }, false);
+  function done(err, data) {
+    if (err) {
+      ee.emit('error', err);
+      return cb(err);
+    }
+    ee.emit('end', data);
+    cb(null, data);
   }
 
 
   function fetchPage(uri, cb) {
-    var time = new Date();
-    var page = {
-      url: uri,
-      events: [],
-      body: null
-    };
-
-    function pushPhantomEvent(eventName) {
-      return function (args) {
-        page.events.push({ name: eventName, args: args });
-      };
-    }
-
-    phantomEvents.forEach(function (eventName) {
-      nightmare.on(eventName, pushPhantomEvent(eventName));
-    });
+    var page = { url: uri, resources: [] };
 
     nightmare
       .on('urlChanged', function (targetUrl) {
         page.url = targetUrl;
       })
-      .on('resourceReceived', function (resource) {
-        if (normalize(resource.url) === normalize(page.url)) {
-          page.status = resource.status;
-          page.headers = resource.headers;
+      .on('loadStarted', function () {
+        page.startTime = new Date();
+      })
+      .on('resourceRequested', function (req) {
+        parseResource(req);
+        page.resources[req.id] = {
+          request: req,
+          startReply: null,
+          endReply: null
+        };
+      })
+      .on('resourceReceived', function (reply) {
+        var resource = page.resources[reply.id];
+        parseResource(reply);
+        if (reply.stage === 'start') {
+          resource.startReply = reply;
+        } else if (reply.stage === 'end') {
+          resource.endReply = reply;
+        }
+        if (normalize(reply.url) === normalize(page.url)) {
+          //page.status = reply.status;
+          //page.headers = reply.headers;
         };
       })
       .on('exit', function (code, signal) {
@@ -190,13 +299,18 @@ module.exports = function (uri, opt) {
           return cb();
         }
 
+        page.endTime = new Date();
+        page.resources = _.compact(page.resources);
+
         if (page.status !== 200) { return cb(null, page); }
 
         // Extract stuff from dom...
         var $html = $.load(page.body);
         page.title = $html('title').text();
-        page.meta = extractMeta($html);
+        //page.meta = extractMeta($html);
         page.links = extractLinks($html, page);
+
+        //page.har = createHar(page);
 
         cb(null, page);
       });
@@ -215,12 +329,12 @@ module.exports = function (uri, opt) {
 
 
   function fetchPages(uri, cb) {
-    if (max && pages.length >= max) { return cb(); }
+    if (settings.max && pages.length >= settings.max) { return cb(); }
 
-    var page = _.find(pages, function (page) { return page.url === uri; });
-    if (page) { return cb(); }
+    var found = _.find(pages, function (page) { return page.url === uri; });
+    if (found) { return cb(); }
 
-    if (isExcluded(uri) || !isIncluded(uri)) { return cb(); }
+    if (isExcluded(settings, uri) || !isIncluded(settings, uri)) { return cb(); }
 
     fetchPage(uri, function (err, page) {
       if (err) { return cb(err); }
@@ -228,7 +342,7 @@ module.exports = function (uri, opt) {
       pages.push(page);
       ee.emit('page', page);
       // Before fetching subpages we filter out based on the base url.
-      var r = new RegExp('^' + baseurl);
+      var r = new RegExp('^' + settings.url);
       var internalLinks = (page.links || {}).internal;
       var subpages = _.filter(internalLinks, function (link) {
         return r.test(link.url);
@@ -240,7 +354,7 @@ module.exports = function (uri, opt) {
 
 
   process.nextTick(function () {
-    fetchPages(uri, function (err) {
+    fetchPages(settings.url, function (err) {
       if (err) { return ee.emit('error', err); }
       ee.emit('end');
     });
