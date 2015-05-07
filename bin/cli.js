@@ -33,12 +33,15 @@ if (argv.v || argv.version) {
 
 var options = _.extend(_.omit(argv, [ '_' ]), { url: url });
 
-var ee = require('../')(options, function () {
-  console.log(arguments);
+var ee = require('../')(options);
+
+ee.on('error', function (err) {
+  console.error(err);
+  process.exit(1);
 });
 
-ee.on('page', function (page) {
-  console.log(JSON.stringify(page, null, 2));
+ee.on('har', function (har) {
+  console.log(JSON.stringify(har, null, 2));
 });
 
 ee.on('end', function () {

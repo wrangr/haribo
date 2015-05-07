@@ -15,7 +15,7 @@ gulp.task('lint', function () {
 
 
 gulp.task('test', [ 'lint' ], function (cb) {
-  gulp.src([ 'index.js' ])
+  gulp.src([ 'index.js', 'lib/**/*.js' ])
     .pipe(istanbul())
     .pipe(istanbul.hookRequire())
     .on('finish', function () {

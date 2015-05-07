@@ -1,50 +1,34 @@
 var url = require('url');
 var EventEmitter = require('events').EventEmitter;
-var Nightmare = require('nightmare');
 var normalize = require('normalizeurl');
 var $ = require('cheerio');
 var _ = require('lodash');
+var which = require('which');
+var pkg = require('./package.json');
+var fetch = require('./lib/fetch');
 
 
-//
-// Parse given URL to get protocol and domain.
-//
-function parseResourceUrl(resource) {
-  if (resource.url.indexOf('data:') === 0) {
-    // base64 encoded data
-    resource.domain = false;
-    resource.protocol = false;
-    resource.isBase64 = true;
-    return;
-  }
-
-  var parsed = url.parse(resource.url);
-
-  resource.protocol = parsed.protocol.replace(':', '');
-  resource.domain = parsed.hostname;
-  resource.query = parsed.query;
-
-  if (resource.protocol === 'https') {
-    resource.isSSL = true;
-  }
-}
-
-
-function parseResource(resource) {
-  resource.headers = _.reduce(resource.headers, function (memo, header) {
-    memo[header.name.toLowerCase()] = header.value;
-    return memo;
-  }, {});
-
-  if (typeof resource.time === 'string') {
-    resource.time = new Date(resource.time);
-  }
-}
+var harDefaults = {
+  version: '1.2',
+  creator: {
+    name: pkg.name,
+    version: pkg.version,
+    comment: pkg.description
+  },
+  browser: {
+    name: 'PhantomJS',
+    version: '',
+    comment: ''
+  },
+  pages: [],
+  entries: [],
+  comment: ''
+};
 
 
 function href2url($html, page, href) {
   var base = $html('base').attr('href');
-  var pageUrlObj = url.parse(page.url);
+  var pageUrlObj = url.parse(page.id);
 
   if (!base) {
     base = pageUrlObj.protocol + '//' + pageUrlObj.host;
@@ -69,7 +53,7 @@ function href2url($html, page, href) {
 
 
 function isExternal(page, href) {
-  var pageUrlObj = url.parse(page.url);
+  var pageUrlObj = url.parse(page.id);
   var hrefUrlObj = url.parse(href);
   return (pageUrlObj.host !== hrefUrlObj.host);
 }
@@ -168,7 +152,7 @@ function createHar(page) {
         receive: endReplyTime - startReplyTime,
         ssl: -1
       },
-      pageref: page.url
+      pageref: page.id
     });
   });
 
@@ -182,7 +166,7 @@ function createHar(page) {
       },
       pages: [{
         startedDateTime: page.startTime.toISOString(),
-        id: page.url,
+        id: page.id,
         title: page.title,
         pageTimings: {
           onLoad: page.endTime - page.startTime
@@ -220,7 +204,7 @@ function isIncluded(settings, uri) {
 }
 
 
-module.exports = function (options, cb) {
+module.exports = function (options) {
 
   // Initialise settings with defaults.
   var settings = _.extend({
@@ -229,91 +213,19 @@ module.exports = function (options, cb) {
     include: []
   }, options);
 
-  cb = cb || function () {};
-
-
+  var har = _.extend({}, harDefaults);
   var ee = new EventEmitter();
-  var nightmare = new Nightmare();
-  var pages = [];
+  var pages = har.pages = [];
 
 
-  function done(err, data) {
+  function done(err) {
     if (err) {
       ee.emit('error', err);
-      return cb(err);
+    } else {
+      ee.emit('har', har);
+      ee.emit('end');
     }
-    ee.emit('end', data);
-    cb(null, data);
-  }
-
-
-  function fetchPage(uri, cb) {
-    var page = { url: uri, resources: [] };
-
-    nightmare
-      .on('urlChanged', function (targetUrl) {
-        page.url = targetUrl;
-      })
-      .on('loadStarted', function () {
-        page.startTime = new Date();
-      })
-      .on('resourceRequested', function (req) {
-        parseResource(req);
-        page.resources[req.id] = {
-          request: req,
-          startReply: null,
-          endReply: null
-        };
-      })
-      .on('resourceReceived', function (reply) {
-        var resource = page.resources[reply.id];
-        parseResource(reply);
-        if (reply.stage === 'start') {
-          resource.startReply = reply;
-        } else if (reply.stage === 'end') {
-          resource.endReply = reply;
-        }
-        if (normalize(reply.url) === normalize(page.url)) {
-          //page.status = reply.status;
-          //page.headers = reply.headers;
-        };
-      })
-      .on('exit', function (code, signal) {
-        // TODO: Handle unexpected exit?
-        //console.log('exit', code, signal);
-      })
-      .goto(uri)
-      .evaluate(function () {
-        return document.documentElement.outerHTML;
-      }, function (body) {
-        page.body = body;
-      })
-      .run(function (err) {
-        if (err) { return cb(err); }
-        // If request automatically followed a redirect to an external URL we ignore
-        // the page.
-        var resUrlObj = url.parse(page.url);
-        var reqUrlObj = url.parse(uri);
-        if (reqUrlObj.hostname !== resUrlObj.hostname) {
-          // TODO: Handle external redirects before issuing request??
-          return cb();
-        }
-
-        page.endTime = new Date();
-        page.resources = _.compact(page.resources);
-
-        if (page.status !== 200) { return cb(null, page); }
-
-        // Extract stuff from dom...
-        var $html = $.load(page.body);
-        page.title = $html('title').text();
-        //page.meta = extractMeta($html);
-        page.links = extractLinks($html, page);
-
-        //page.har = createHar(page);
-
-        cb(null, page);
-      });
+    return ee;
   }
 
 
@@ -321,25 +233,40 @@ module.exports = function (options, cb) {
     if (!remain) { remain = links.slice(); }
     var link = remain.shift();
     if (!link) { return cb(); }
-    fetchPages(link.url, function (err) {
+    fetchRecursive(link.url, function (err) {
       if (err) { return cb(err); }
       fetchSubPages(links, cb, remain);
     });
   }
 
 
-  function fetchPages(uri, cb) {
+  function fetchRecursive(uri, cb) {
     if (settings.max && pages.length >= settings.max) { return cb(); }
 
-    var found = _.find(pages, function (page) { return page.url === uri; });
+    var found = _.find(pages, function (page) { return page.id === uri; });
     if (found) { return cb(); }
 
     if (isExcluded(settings, uri) || !isIncluded(settings, uri)) { return cb(); }
 
-    fetchPage(uri, function (err, page) {
+    var matches = /^([a-z0-9+\.\-]+):/i.exec(uri);
+    if (!matches || matches.length < 2) {
+      uri = 'http://' + uri;
+    } else if ([ 'http', 'https' ].indexOf(matches[1]) === -1) {
+      return done(new Error('Unsupported scheme: ' + matches[1]));
+    }
+
+    var urlObj = url.parse(uri, true);
+    if (!urlObj.hostname) {
+      return done(new Error('Invalid URL'));
+    }
+
+    uri = url.format(urlObj);
+
+    fetch(uri, function (err, page, entries) {
       if (err) { return cb(err); }
       if (!page) { return cb(); }
       pages.push(page);
+      har.entries = har.entries.concat(entries);
       ee.emit('page', page);
       // Before fetching subpages we filter out based on the base url.
       var r = new RegExp('^' + settings.url);
@@ -354,10 +281,7 @@ module.exports = function (options, cb) {
 
 
   process.nextTick(function () {
-    fetchPages(settings.url, function (err) {
-      if (err) { return ee.emit('error', err); }
-      ee.emit('end');
-    });
+    fetchRecursive(settings.url, done);
   });
 
   return ee;

@@ -1,10 +1,10 @@
 var path = require('path');
 var assert = require('assert');
 var Hapi = require('hapi');
-var pages = require('../');
+var haribo = require('../');
 
 
-describe('pages', function () {
+describe('haribo', function () {
 
   this.timeout(30 * 1000);
 
@@ -29,22 +29,14 @@ describe('pages', function () {
 
   it('should...', function (done) {
     var baseurl = 'http://127.0.0.1:12345/';
-    //var baseurl = 'https://wrangr.com/';
-    var results = [];
 
-    pages(baseurl, { max: 1 })
-      .on('page', function (page) {
-        results.push(page);
-      })
-      .on('end', function () {
-        //assert.equal(results.length, 2);
-        results.forEach(function (page) {
-          require('fs').writeFileSync('/Users/lupo/test.har', JSON.stringify(page.har, null, 2));
-          console.log(page);
-          //assert.equal(typeof page.url, 'string');
+    haribo({ url: baseurl })
+      .on('har', function (har) {
+        har.entries.forEach(function (entry) {
+          console.log(entry.request);
         });
-        done();
-      });
+      })
+      .on('end', done);
   });
 
 });
