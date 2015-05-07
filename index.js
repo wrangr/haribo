@@ -59,17 +59,6 @@ function isExternal(page, href) {
 }
 
 
-function extractMeta($html) {
-  return _.compact($html('meta').map(function (i, meta) {
-    var $meta = $(meta);
-    var name = $meta.attr('name');
-    if (name) {
-      return { name: name, content: $meta.attr('content') };
-    }
-  }));
-}
-
-
 function extractLinks($html, page) {
   var links = { internal: [], external: [] };
 
