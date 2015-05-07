@@ -31,10 +31,14 @@ describe('haribo', function () {
     var baseurl = 'http://127.0.0.1:12345/';
 
     haribo({ url: baseurl })
+      .on('harError', function (harError) {
+        console.error(harError);
+      })
       .on('har', function (har) {
-        har.entries.forEach(function (entry) {
-          console.log(entry);
-        });
+        console.log(har);
+        //har.entries.forEach(function (entry) {
+        //  console.log(entry);
+        //});
       })
       .on('end', done);
   });

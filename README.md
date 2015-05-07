@@ -1,5 +1,8 @@
 # haribo
 
+[![Build Status](https://travis-ci.org/wrangr/haribo.svg?branch=master)](https://travis-ci.org/wrangr/haribo)
+
+
 ## CLI
 
 ```sh
