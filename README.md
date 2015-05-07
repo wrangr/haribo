@@ -1,7 +1,6 @@
 # haribo
 
-[![Build Status](https://travis-ci.org/wrangr/haribo.svg?branch=master)](https://travis-ci.org/wrangr/haribo)
-
+[![Build Status](https://magnum.travis-ci.com/wrangr/haribo.svg?token=4uyuoxi9qhvAfjzUTB6y&branch=master)](https://magnum.travis-ci.com/wrangr/haribo)
 
 ## CLI
 
