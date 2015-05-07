@@ -1,5 +1,7 @@
 #! /usr/bin/env node
 
+var fs = require('fs');
+var path = require('path');
 var minimist = require('minimist');
 var _ = require('lodash');
 var pkg = require('../package.json');
@@ -16,14 +18,12 @@ if (argv.v || argv.version) {
     '',
     'Options:',
     '',
-    '--max=<int>',
-    '--include=<pattern>  ',
-    '--exclude=<pattern>  ',
-    '-h, --help           Show this help.',
-    '-v, --version        Show version.',
-    '--no-colors          Diable pretty colours in output.',
-    '--json               Output minimised JSON (good for machines).',
-    '--jsonpretty         Output human readable JSON.',
+    '--out=</path/to/file>  Write HAR file to given path.',
+    '--max=<int>            Maximum number of pages to fetch.',
+    '--include=<pattern>    Include URLs mathing given pattern.',
+    '--exclude=<pattern>    Exclude URLs mathing given pattern.',
+    '-h, --help             Show this help.',
+    '-v, --version          Show version.',
     '',
     pkg.author.name + ' ' + (new Date()).getFullYear()
   ].join('\n'));
@@ -31,8 +31,7 @@ if (argv.v || argv.version) {
 }
 
 
-var options = _.extend(_.omit(argv, [ '_' ]), { url: url });
-
+var options = _.extend(_.omit(argv, [ '_', 'out' ]), { url: url });
 var ee = require('../')(options);
 
 ee.on('error', function (err) {
@@ -41,7 +40,13 @@ ee.on('error', function (err) {
 });
 
 ee.on('har', function (har) {
-  console.log(JSON.stringify(har, null, 2));
+  var json = JSON.stringify(har, null, 2);
+
+  if (argv.out) {
+    fs.writeFileSync(path.resolve(argv.out), json);
+  } else {
+    console.log(json);
+  }
 });
 
 ee.on('end', function () {

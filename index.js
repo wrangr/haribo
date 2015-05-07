@@ -98,86 +98,6 @@ function extractLinks($html, page) {
 }
 
 
-function createHar(page) {
-  var entries = [];
-
-  page.resources.forEach(function (resource) {
-    var request = resource.request;
-    var startReply = resource.startReply;
-    var endReply = resource.endReply;
-
-    if (!request || !startReply || !endReply) { return; }
-
-    // Exclude Data URI from HAR file because they aren't included in spec
-    if (request.url.match(/(^data:image\/.*)/i)) { return; }
-
-    var requestTime = new Date(request.time);
-    var startReplyTime = new Date(startReply.time);
-    var endReplyTime = new Date(endReply.time);
-
-    entries.push({
-      startedDateTime: requestTime,
-      time: endReplyTime - requestTime,
-      request: {
-        method: request.method,
-        url: request.url,
-        httpVersion: "HTTP/1.1",
-        cookies: [],
-        headers: request.headers,
-        queryString: [],
-        headersSize: -1,
-        bodySize: -1
-      },
-      response: {
-        status: endReply.status,
-        statusText: endReply.statusText,
-        httpVersion: "HTTP/1.1",
-        cookies: [],
-        headers: endReply.headers,
-        redirectURL: "",
-        headersSize: -1,
-        bodySize: startReply.bodySize,
-        content: {
-          size: startReply.bodySize,
-          mimeType: endReply.contentType
-        }
-      },
-      cache: {},
-      timings: {
-        blocked: 0,
-        dns: -1,
-        connect: -1,
-        send: 0,
-        wait: startReplyTime - requestTime,
-        receive: endReplyTime - startReplyTime,
-        ssl: -1
-      },
-      pageref: page.id
-    });
-  });
-
-  return {
-    log: {
-      version: '1.2',
-      creator: {
-        name: "PhantomJS",
-        //version: phantom.version.major + '.' + phantom.version.minor +
-        //  '.' + phantom.version.patch
-      },
-      pages: [{
-        startedDateTime: page.startTime.toISOString(),
-        id: page.id,
-        title: page.title,
-        pageTimings: {
-          onLoad: page.endTime - page.startTime
-        }
-      }],
-      entries: entries
-    }
-  };
-}
-
-
 function isExcluded(settings, uri) {
   return settings.exclude.reduce(function (memo, pattern) {
     // If exclude pattern has already been matched we skip.
@@ -222,7 +142,7 @@ module.exports = function (options) {
     if (err) {
       ee.emit('error', err);
     } else {
-      ee.emit('har', har);
+      ee.emit('har', { log: har });
       ee.emit('end');
     }
     return ee;

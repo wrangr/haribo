@@ -33,7 +33,7 @@ describe('haribo', function () {
     haribo({ url: baseurl })
       .on('har', function (har) {
         har.entries.forEach(function (entry) {
-          console.log(entry.request);
+          console.log(entry);
         });
       })
       .on('end', done);
