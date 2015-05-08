@@ -2,6 +2,7 @@
 
 var fs = require('fs');
 var path = require('path');
+var util = require('util');
 var minimist = require('minimist');
 var _ = require('lodash');
 var pkg = require('../package.json');
@@ -35,7 +36,10 @@ var options = _.extend(_.omit(argv, [ '_', 'out' ]), { url: url });
 var ee = require('../')(options);
 
 ee.on('error', function (err) {
-  console.error(err);
+  console.error(util.inspect(err, { depth: null }));
+  if (err.stack) {
+    console.error(err.stack);
+  }
   process.exit(1);
 });
 
