@@ -1,90 +1,10 @@
 var url = require('url');
 var EventEmitter = require('events').EventEmitter;
-var validate = require('har-validator');
-var normalize = require('normalizeurl');
-var $ = require('cheerio');
 var _ = require('lodash');
-var pkg = require('./package.json');
+
+
 var fetch = require('./lib/fetch');
-
-
-var harDefaults = {
-  version: '1.2',
-  creator: {
-    name: pkg.name,
-    version: pkg.version,
-    comment: pkg.description
-  },
-  browser: {
-    name: 'PhantomJS',
-    version: '',
-    comment: ''
-  },
-  pages: [],
-  entries: [],
-  comment: ''
-};
-
-
-function href2url($html, page, href) {
-  var base = $html('base').attr('href');
-  var pageUrlObj = url.parse(page.id);
-
-  if (!base) {
-    base = pageUrlObj.protocol + '//' + pageUrlObj.host;
-  }
-
-  if (/^\/\//.test(href)) {
-    href = pageUrlObj.protocol + href;
-  } else if (/^\//.test(href)) {
-    href = base + href;
-  } else if (!/^(http|https)/.test(href)) {
-    href = base + pageUrlObj.path + href;
-  }
-
-  var hrefUrlObj = url.parse(href);
-  if (!hrefUrlObj.host) { hrefUrlObj.host = pageUrlObj.host; }
-
-  // If there is a fragment we remove it as we are not interested...
-  if (hrefUrlObj.hash) { delete hrefUrlObj.hash; }
-
-  return url.format(hrefUrlObj);
-}
-
-
-function isExternal(page, href) {
-  var pageUrlObj = url.parse(page.id);
-  var hrefUrlObj = url.parse(href);
-  return (pageUrlObj.host !== hrefUrlObj.host);
-}
-
-
-function extractLinks($html, page) {
-  var links = { internal: [], external: [] };
-
-  $html('a').map(function (i, a) {
-    var $a = $(a);
-    var href = $a.attr('href');
-    var link = {
-      text: $a.text().replace('\n', ' '),
-      href: href,
-      title: $a.attr('title'),
-      target: $a.attr('target')
-    };
-
-    if (!href || /^(#|mailto)/.test(href)) { return; }
-
-    link.url = href2url($html, page, href);
-
-    if (isExternal(page, link.url)) {
-      links.external.push(link);
-    } else {
-      links.internal.push(link);
-    }
-  });
-
-  return links;
-}
+var har = require('./lib/har');
 
 
 function isExcluded(settings, uri) {
@@ -122,31 +42,17 @@ module.exports = function (options) {
     include: []
   }, options);
 
-  var har = _.extend({}, harDefaults);
   var ee = new EventEmitter();
-  var pages = har.pages = [];
+  var pages = [];
+  var entries = [];
 
 
   function emitHar() {
-    var json = {
-      log: _.extend({}, har, {
-        entries: har.entries.filter(function (entry) {
-          return entry._ignore !== true;
-        })
-      })
-    };
-
-    var stringified = JSON.stringify(json);
-    var parsed = JSON.parse(stringified);
-
-    validate(parsed, function (err, valid) {
+    har.create({ pages: pages, entries: entries }, function (err, har) {
       if (err) {
-        ee.emit('harError', err, json);
-      } else if (!valid) {
-        ee.emit('harInvalid', json);
-      } else {
-        ee.emit('har', json);
+        return ee.emit('error', err);
       }
+      ee.emit('har', har);
     });
   }
 
@@ -195,12 +101,14 @@ module.exports = function (options) {
 
     uri = url.format(urlObj);
 
-    fetch(uri, function (err, page, entries) {
+    fetch(uri, function (err, page, pageEntries) {
       if (err) { return cb(err); }
       if (!page) { return cb(); }
+
       pages.push(page);
-      har.entries = har.entries.concat(entries);
-      ee.emit('page', page);
+      entries = entries.concat(pageEntries);
+      ee.emit('page', page, entries);
+
       // Before fetching subpages we filter out based on the base url.
       var r = new RegExp('^' + settings.url);
       var internalLinks = (page.links || {}).internal;

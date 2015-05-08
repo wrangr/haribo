@@ -39,18 +39,6 @@ ee.on('error', function (err) {
   process.exit(1);
 });
 
-ee.on('harError', function (harError, har) {
-  console.error(harError);
-  console.error(har.log);
-  process.exit(2);
-});
-
-ee.on('harInvalid', function (har) {
-  console.error('Invalid HAR');
-  console.error(har);
-  process.exit(3);
-});
-
 ee.on('har', function (har) {
   var json = JSON.stringify(har, null, 2);
 
