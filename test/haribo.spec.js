@@ -125,5 +125,16 @@ describe('haribo', function () {
       .on('end', done);
   });
 
+  it.only('should...', function (done) {
+    var baseurl = 'http://127.0.0.1:12345/';
+
+    haribo({ url: baseurl })
+      .on('har', function (har) {
+        console.log(har.log.pages[0]);
+        //assert.equal(har.log.pages.length, 2);
+      })
+      .on('end', done);
+  });
+
 });
 
