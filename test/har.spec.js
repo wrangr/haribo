@@ -59,14 +59,13 @@ describe('haribo/har', function () {
   });
 
   it('should fail on validation errors', function () {
-    var entry = { foo: 'bar' };
-    har({ entries: [ entry ] }, function (err, json) {
+    har({ pages: [ {} ] }, function (err, json) {
       assert.equal(err.name, 'ValidationError');
       assert.ok(err.errors.length > 0);
       err.errors.forEach(function (error) {
         assert.equal(typeof error.field, 'string');
         assert.equal(typeof error.message, 'string');
-        assert.deepEqual(error.value, entry);
+        assert.ok(error.hasOwnProperty('value'));
       });
     });
   });
