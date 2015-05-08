@@ -7,6 +7,13 @@ var fetch = require('./lib/fetch');
 var har = require('./lib/har');
 
 
+var defaults = {
+  max: 1,
+  exclude: [],
+  include: []
+};
+
+
 function isExcluded(settings, uri) {
   return settings.exclude.reduce(function (memo, pattern) {
     // If exclude pattern has already been matched we skip.
@@ -35,36 +42,19 @@ function isIncluded(settings, uri) {
 
 module.exports = function (options) {
 
-  // Initialise settings with defaults.
-  var settings = _.extend({
-    max: 1,
-    exclude: [],
-    include: []
-  }, options);
-
+  var settings = _.extend(defaults, options);
   var ee = new EventEmitter();
   var pages = [];
   var entries = [];
 
 
-  function emitHar() {
-    har.create({ pages: pages, entries: entries }, function (err, har) {
-      if (err) {
-        return ee.emit('error', err);
-      }
-      ee.emit('har', har);
-    });
-  }
-
-
   function done(err) {
-    if (err) {
-      ee.emit('error', err);
-    } else {
-      emitHar();
+    if (err) { return ee.emit('error', err); }
+    har({ pages: pages, entries: entries }, function (err, json) {
+      if (err) { return ee.emit('error', err); }
+      ee.emit('har', json);
       ee.emit('end');
-    }
-    return ee;
+    });
   }
 
 
@@ -111,7 +101,7 @@ module.exports = function (options) {
 
       // Before fetching subpages we filter out based on the base url.
       var r = new RegExp('^' + settings.url);
-      var internalLinks = (page.links || {}).internal;
+      var internalLinks = (page._links || {}).internal;
       var subpages = _.filter(internalLinks, function (link) {
         return r.test(link.url);
       });

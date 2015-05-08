@@ -115,5 +115,15 @@ describe('haribo', function () {
       .on('end', done);
   });
 
+  it('should create 2 page HAR (simple site)', function (done) {
+    var baseurl = 'http://127.0.0.1:12345/';
+
+    haribo({ url: baseurl, max: 2 })
+      .on('har', function (har) {
+        assert.equal(har.log.pages.length, 2);
+      })
+      .on('end', done);
+  });
+
 });
 
