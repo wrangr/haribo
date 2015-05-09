@@ -62,7 +62,7 @@ module.exports = function (options) {
     if (!remain) { remain = links.slice(); }
     var link = remain.shift();
     if (!link) { return cb(); }
-    fetchRecursive(link.url, function (err) {
+    fetchRecursive(link.href, function (err) {
       if (err) { return cb(err); }
       fetchSubPages(links, cb, remain);
     });
@@ -101,9 +101,8 @@ module.exports = function (options) {
 
       // Before fetching subpages we filter out based on the base url.
       var r = new RegExp('^' + settings.url);
-      var internalLinks = (page._links || {}).internal;
-      var subpages = _.filter(internalLinks, function (link) {
-        return r.test(link.url);
+      var subpages = page._links.filter(function (link) {
+        return r.test(link.href);
       });
       if (!subpages.length) { return cb(); }
       fetchSubPages(subpages, cb);

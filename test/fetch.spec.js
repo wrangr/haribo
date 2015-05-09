@@ -27,27 +27,19 @@ describe('haribo/fetch', function () {
     this.server.stop(done);
   });
 
-  it('should', function (done) {
-    fetch('http://127.0.0.1:12345/', function (err, data) {
-      //console.log(err, data);
+  it('should pass both page and entries in callback', function (done) {
+    var url = 'http://127.0.0.1:12345/';
+    fetch(url, function (err, page, entries) {
+      assert.ok(!err);
+      assert.equal(page.id, url);
+      assert.equal(page.title, 'Site 1');
+      assert.ok(entries.length > 0);
+      entries.forEach(function (entry) {
+        assert.equal(entry.pageref, url);
+      });
       done();
     });
   });
-
-  /*
-  it('should throw when url is not a string', function () {
-    assert.throws(function () {
-      fetch();
-    }, function (err) {
-      assert.ok(err instanceof TypeError);
-      return /'url' must be a string/i.test(err.message)
-    });
-  });
-
-  it('should..', function () {
-    fetch('foo');
-  });
-  */
 
 });
 
