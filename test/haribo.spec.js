@@ -55,13 +55,15 @@ describe('haribo', function () {
           assert.equal(typeof har.log.pages[0].pageTimings.onContentLoad, 'number');
           assert.equal(typeof har.log.pages[0].pageTimings.onLoad, 'number');
           assert.equal(har.log.pages[0].pageTimings.comment, '');
-          assert.equal(har.log.pages[0]._status, 200);
-          assert.equal(typeof har.log.pages[0]._source, 'string');
-          assert.equal(har.log.pages[0]._links.internal.length, 1);
-          assert.equal(har.log.pages[0]._links.internal[0].text, 'About Us');
-          assert.equal(har.log.pages[0]._links.internal[0].href, 'about.html');
-          assert.equal(har.log.pages[0]._links.internal[0].url, baseurl + 'about.html');
-          assert.equal(har.log.pages[0]._links.external.length, 0);
+          //assert.equal(har.log.pages[0]._status, 200);
+          assert.equal(typeof har.log.pages[0]._renderedSource, 'string');
+          assert.equal(har.log.pages[0]._links.length, 2);
+          assert.equal(har.log.pages[0]._links[0].text, 'About Us');
+          assert.equal(har.log.pages[0]._links[0].href, baseurl + 'about.html');
+          assert.equal(har.log.pages[0]._links[0].internal, true);
+          assert.equal(har.log.pages[0]._links[1].text, 'Me on Twitter!');
+          assert.equal(har.log.pages[0]._links[1].href, 'https://twitter.com/lupomontero');
+          assert.equal(har.log.pages[0]._links[1].internal, false);
 
           har.log.entries.forEach(function (entry) {
             assert.equal(entry.pageref, baseurl);
@@ -100,15 +102,6 @@ describe('haribo', function () {
             assert.equal(typeof entry.timings.wait, 'number');
             assert.equal(typeof entry.timings.receive, 'number');
             assert.equal(typeof entry.timings.ssl, 'number');
-
-            //_protocol
-            //_domain
-            //_query
-            //_isSSL
-            //_isBase64
-            //_startReply
-            //_endReply
-            //console.log(entry);
           });
         });
       })
@@ -121,6 +114,17 @@ describe('haribo', function () {
     haribo({ url: baseurl, max: 2 })
       .on('har', function (har) {
         assert.equal(har.log.pages.length, 2);
+      })
+      .on('end', done);
+  });
+
+  it.skip('should...', function (done) {
+    var baseurl = 'http://127.0.0.1:12345/';
+
+    haribo({ url: baseurl })
+      .on('har', function (har) {
+        console.log(har.log.pages[0]);
+        //assert.equal(har.log.pages.length, 2);
       })
       .on('end', done);
   });
