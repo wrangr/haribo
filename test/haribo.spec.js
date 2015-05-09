@@ -18,7 +18,7 @@ describe('haribo', function () {
       path: '/{p*}',
       handler: {
         directory: {
-          path: path.join(__dirname, 'sites/1')
+          path: path.join(__dirname, 'sites')
         }
       }
     });
@@ -30,7 +30,7 @@ describe('haribo', function () {
   });
 
   it('should create default 1 page HAR (simple site)', function (done) {
-    var baseurl = 'http://127.0.0.1:12345/';
+    var baseurl = 'http://127.0.0.1:12345/01-simple/';
 
     haribo({ url: baseurl })
       .on('har', function (har) {
@@ -109,7 +109,7 @@ describe('haribo', function () {
   });
 
   it('should create 2 page HAR (simple site)', function (done) {
-    var baseurl = 'http://127.0.0.1:12345/';
+    var baseurl = 'http://127.0.0.1:12345/01-simple/';
 
     haribo({ url: baseurl, max: 2 })
       .on('har', function (har) {
@@ -118,13 +118,42 @@ describe('haribo', function () {
       .on('end', done);
   });
 
-  it.skip('should...', function (done) {
-    var baseurl = 'http://127.0.0.1:12345/';
+  it('should handle 403 on baseurl', function (done) {
+    var baseurl = 'http://127.0.0.1:12345/02-forbidden/';
+
+    // This URL returns a 403 as there is no index file and directory listing is
+    // not enabled.
 
     haribo({ url: baseurl })
       .on('har', function (har) {
-        console.log(har.log.pages[0]);
-        //assert.equal(har.log.pages.length, 2);
+        var page = har.log.pages[0];
+        assert.equal(page.id, baseurl);
+        assert.equal(page.pageTimings.onContentLoad, -1);
+
+        assert.equal(har.log.entries.length, 1);
+        var entry = har.log.entries[0];
+        assert.equal(entry.pageref, page.id);
+        assert.equal(entry.request.url, page.id);
+        assert.equal(entry.response.status, 403);
+      })
+      .on('end', done);
+  });
+
+  it('should follow broken link and report it', function (done) {
+    var baseurl = 'http://127.0.0.1:12345/03-broken-link/';
+
+    haribo({ url: baseurl, max: 2 })
+      .on('har', function (har) {
+        assert.equal(har.log.pages.length, 2);
+        assert.equal(har.log.pages[0].id, baseurl);
+        assert.equal(har.log.pages[1].id, baseurl + 'about.html');
+        assert.equal(har.log.entries.length, 2);
+        assert.equal(har.log.entries[0].pageref, baseurl);
+        assert.equal(har.log.entries[0].request.url, baseurl);
+        assert.equal(har.log.entries[0].response.status, 200);
+        assert.equal(har.log.entries[1].pageref, baseurl + 'about.html');
+        assert.equal(har.log.entries[1].request.url, baseurl + 'about.html');
+        assert.equal(har.log.entries[1].response.status, 404);
       })
       .on('end', done);
   });

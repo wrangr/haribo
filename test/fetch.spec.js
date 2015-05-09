@@ -16,7 +16,7 @@ describe('haribo/fetch', function () {
       path: '/{p*}',
       handler: {
         directory: {
-          path: path.join(__dirname, 'sites/1')
+          path: path.join(__dirname, 'sites/01-simple')
         }
       }
     });
@@ -41,5 +41,38 @@ describe('haribo/fetch', function () {
     });
   });
 
+  it('should emit events', function (done) {
+    var url = 'http://127.0.0.1:12345/';
+    var ee = fetch(url);
+    var events = [];
+
+    ee.on('data', function (obj) {
+      events.push(obj);
+    });
+
+    ee.on('end', function () {
+      assert.equal(events.length, 3);
+
+      var page = events.reduce(function (memo, ev) {
+        if (ev.name === 'page') { return ev.data; }
+        return memo;
+      }, null);
+
+      assert.equal(page.id, url);
+      assert.equal(page.title, 'Site 1');
+
+      var entries = events.reduce(function (memo, ev) {
+        if (ev.name === 'entry') { memo.push(ev.data); }
+        return memo;
+      }, []);
+
+      assert.equal(entries.length, 2);
+      entries.forEach(function (entry) {
+        assert.equal(entry.pageref, page.id);
+      });
+
+      done();
+    });
+  });
 });
 
