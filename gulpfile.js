@@ -3,7 +3,7 @@ var jshint = require('gulp-jshint');
 var mocha = require('gulp-mocha');
 
 
-var files = [ 'gulpfile.js', 'index.js', 'pages.js', 'test/**/*.js' ];
+var files = [ 'gulpfile.js', 'index.js', 'lib/**/*.js', 'test/**/*.js' ];
 
 
 gulp.task('lint', function () {
