@@ -21,8 +21,10 @@ var har = require('../lib/har');
 var pkg = require('../package.json');
 
 
+var history = {};
+
+
 var defaults = {
-  out: null,
   max: 1,
   include: [],
   exclude: []
@@ -39,7 +41,6 @@ function main(argv) {
       '',
       'Options:',
       '',
-      '--out=</path/to/file>  Write HAR file to given path.',
       '--max=<int>            Maximum number of pages to fetch.',
       '--include=<pattern>    Include URLs matching given pattern.',
       '--exclude=<pattern>    Exclude URLs matching given pattern.',
@@ -56,28 +57,10 @@ function main(argv) {
     return memo;
   }, defaults);
 
-  var uri = argv._.shift();
-  //var matches = /^([a-z0-9+\.\-]+):/i.exec(uri);
-  //if (!matches || matches.length < 2) {
-  //  uri = 'http://' + uri;
-  //} else if ([ 'http', 'https' ].indexOf(matches[1]) === -1) {
-  //  return done(new Error('Unsupported scheme: ' + matches[1]));
-  //}
+  options.url = argv._.shift();
 
-  //var urlObj = url.parse(uri, true);
-  //if (!urlObj.hostname) {
-  //  return done(new Error('Invalid URL'));
-  //}
-
-  //options.url = url.format(urlObj);
-
-  options.url = uri;
   sniff(options, done);
 }
-
-
-// Start the action...
-main(minimist(phantom.args));
 
 
 function sniff(options, cb) {
@@ -100,7 +83,6 @@ function sniff(options, cb) {
 
   webpage.onResourceReceived = function (res) {
     var entry = entries[res.id - 1];
-
     if (res.stage === 'start') {
       entry._startReply = res;
     } else if (res.stage === 'end') {
@@ -148,12 +130,14 @@ function sniff(options, cb) {
   };
 
   webpage.open(options.url, function (status) {
+    page._endTime = new Date();
+    page._urlObj = url.parse(page.id);
+    page._base = base(page._urlObj);
+
     if (status !== 'success') {
       emit('failure', page);
       return cb();
     }
-
-    page._endTime = new Date();
 
     page.title = webpage.evaluate(function () {
       return document.title;
@@ -163,18 +147,9 @@ function sniff(options, cb) {
       return document.documentElement.outerHTML;
     });
 
-    page._links = webpage.evaluate(function () {
-      var nodeList = document.getElementsByTagName('a');
-      var nodeArray = Array.prototype.slice.call(nodeList);
-      return nodeArray.reduce(function (memo, node) {
-        var href = node.href;
-        if (!href || /^(#|mailto)/.test(href)) { return memo; }
-        var link = { href: href, text: node.innerHTML.replace(/\n/g, '') };
-        if (node.title) { link.title = node.title; }
-        if (node.target) { link.target = node.target; }
-        memo.push(link);
-        return memo;
-      }, []);
+    page._links = processLinks(page);
+    page._links.forEach(function (link) {
+      log(link);
     });
 
     page.pageTimings = {
@@ -188,21 +163,74 @@ function sniff(options, cb) {
 
     emit('page', page);
 
-    // Before fetching subpages we filter out based on the base url.
-    var r = new RegExp('^' + options.url);
-    var subpages = page._links.filter(function (link) {
-      return r.test(link.href);
-    });
-    if (!subpages.length) { return cb(); }
-    //log(subpages);
-    cb();
+    history[page.id] = (history[page.id] || 0) + 1;
+
+    if (options.max && options.max <= Object.keys(history).length) {
+      return cb();
+    }
+
+    log('FETCH MORE!!');
     //fetchSubPages(subpages, cb);
+    cb();
   });
 }
 
 
+function base(urlObj) {
+  return urlObj.protocol + '//' + urlObj.host + urlObj.path;
+}
+
+
+function processLinks(page) {
+  var links = webpage.evaluate(function () {
+    var nodeList = document.getElementsByTagName('a');
+    var nodeArray = Array.prototype.slice.call(nodeList);
+    return nodeArray.reduce(function (memo, node) {
+      var href = node.href;
+      if (!href || /^(#|mailto)/.test(href)) { return memo; }
+      var link = { href: href, text: node.innerHTML.replace(/\n/g, '') };
+      if (node.title) { link.title = node.title; }
+      if (node.target) { link.target = node.target; }
+      memo.push(link);
+      return memo;
+    }, []);
+  });
+
+  // Before fetching subpages we filter out based on the base url.
+  var r = new RegExp('^' + page._urlObj.pathname);
+
+  return links.reduce(function (memo, link) {
+    link.urlObj = url.parse(link.href, true);
+
+    var id = base(link.urlObj);
+
+    var found = memo.filter(function (l) {
+      return l.id === id;
+    }).shift();
+
+    if (found) {
+      found.count += 1;
+      found.instances.push(link);
+    } else {
+      memo.push({
+        id: id,
+        count: 1,
+        internal: page._urlObj.host === link.urlObj.host,
+        subpage: link.internal && r.test(link.urlObj.pathname),
+        instances: [ link ]
+      });
+    }
+
+    return memo;
+  }, []);
+}
+
+
+function getSubpages() {}
+
 
 // ***** //
+
 
 var hasEmitted = false;
 var isDone = false;
@@ -231,10 +259,14 @@ function emit(name, data) {
 
 
 function done(err) {
+  var code = 0;
+
   if (isDone) { return; }
 
-  var code = 0;
-  if (webpage) { webpage.close(); }
+  if (webpage) {
+    webpage.close();
+  }
+
   if (err) {
     code = 1;
     emit('error', err);
@@ -242,6 +274,10 @@ function done(err) {
 
   console.log(']');
   isDone = true;
-  setTimeout(function () { phantom.exit(code); }, 0);
+  exit(code);
 }
+
+
+// Start the action...
+main(minimist(phantom.args));
 
