@@ -1,4 +1,5 @@
 var assert = require('assert');
+var phantomjs = require('phantomjs');
 var har = require('../lib/har');
 var pkg = require('../package.json');
 
@@ -43,11 +44,11 @@ describe('haribo/har', function () {
       assert.equal(json.log.creator.version, pkg.version);
       assert.equal(json.log.creator.comment, pkg.description);
       assert.equal(json.log.browser.name, 'PhantomJS');
-      assert.equal(json.log.browser.version, '');
-      assert.equal(json.log.browser.comment, '');
+      assert.equal(json.log.browser.version, phantomjs.version);
+      //assert.equal(json.log.browser.comment, '');
       assert.deepEqual(json.log.pages, []);
       assert.deepEqual(json.log.entries, []);
-      assert.equal(json.log.comment, '');
+      //assert.equal(json.log.comment, '');
     });
   });
 

@@ -2,6 +2,7 @@ var path = require('path');
 var assert = require('assert');
 var Hapi = require('hapi');
 var validate = require('har-validator');
+var phantomjs = require('phantomjs');
 var haribo = require('../');
 var pkg = require('../package.json');
 
@@ -64,11 +65,11 @@ describe('haribo', function () {
           assert.equal(har.log.creator.version, pkg.version);
           assert.equal(har.log.creator.comment, pkg.description);
           assert.equal(har.log.browser.name, 'PhantomJS');
-          assert.equal(har.log.browser.version, '');
-          assert.equal(har.log.browser.comment, '');
+          assert.equal(har.log.browser.version, phantomjs.version);
+          //assert.equal(har.log.browser.comment, '');
           assert.equal(har.log.pages.length, 1);
           assert.equal(har.log.entries.length, 2);
-          assert.equal(har.log.comment, '');
+          //assert.equal(har.log.comment, '');
 
           assert.equal(har.log.pages[0].id, baseurl);
           //assert.equal(har.log.pages[0].comment, '');
