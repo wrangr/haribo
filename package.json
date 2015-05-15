@@ -8,7 +8,7 @@
     "url": "https://wrangr.com/"
   },
   "bin": {
-    "haribo": "./bin/cli.js"
+    "haribo": "./bin/haribo.js"
   },
   "scripts": {
     "test": "gulp test"
