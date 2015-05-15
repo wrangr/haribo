@@ -1,9 +1,11 @@
+var cp = require('child_process');
 var url = require('url');
-var EventEmitter = require('events').EventEmitter;
+var path = require('path');
+var events = require('events');
 var _ = require('lodash');
-
-
-var fetch = require('./lib/fetch');
+var JSONStream = require('JSONStream');
+var phantomjs = require('phantomjs');
+var script = path.join(__dirname, 'lib', 'sniff.js');
 var har = require('./lib/har');
 
 
@@ -12,6 +14,30 @@ var defaults = {
   exclude: [],
   include: []
 };
+
+
+function sniff(uri) {
+  var child = cp.spawn(phantomjs.path, [ script, uri ]);
+  var parser = child.stdout.pipe(JSONStream.parse('*'));
+  var ee = new events.EventEmitter();
+  
+  parser.on('data', function (obj) {
+    if (obj.name === 'page') {
+      var pageUrlObj = url.parse(obj.data.id);
+      obj.data._links.forEach(function (link) {
+        link.internal = pageUrlObj.host === url.parse(link.href).host;
+      });
+    }
+    ee.emit(obj.name, obj.data);
+  });
+
+  child.on('close', function (code) {
+    if (code > 0) { return ee.emit('error', new Error('PhantomJS crashed')); }
+    ee.emit('end');
+  });
+
+  return ee;
+}
 
 
 function isExcluded(settings, uri) {
@@ -43,14 +69,15 @@ function isIncluded(settings, uri) {
 module.exports = function (options) {
 
   var settings = _.extend(defaults, options);
-  var ee = new EventEmitter();
+  var ee = new events.EventEmitter();
   var pages = [];
   var entries = [];
+  var failures = [];
 
 
   function done(err) {
     if (err) { return ee.emit('error', err); }
-    har({ pages: pages, entries: entries }, function (err, json) {
+    har({ pages: pages, entries: entries, failures: failures }, function (err, json) {
       if (err) { return ee.emit('error', err); }
       ee.emit('har', json);
       ee.emit('end');
@@ -77,31 +104,35 @@ module.exports = function (options) {
 
     if (isExcluded(settings, uri) || !isIncluded(settings, uri)) { return cb(); }
 
-    var matches = /^([a-z0-9+\.\-]+):/i.exec(uri);
-    if (!matches || matches.length < 2) {
-      uri = 'http://' + uri;
-    } else if ([ 'http', 'https' ].indexOf(matches[1]) === -1) {
-      return done(new Error('Unsupported scheme: ' + matches[1]));
-    }
+    //console.log(uri);
 
-    var urlObj = url.parse(uri, true);
-    if (!urlObj.hostname) {
-      return done(new Error('Invalid URL'));
-    }
+    var sniffer = sniff(uri);
+    
+    sniffer.on('error', cb);
+    
+    sniffer.on('failure', function (page) {
+      failures.push(page);
+      ee.emit('failure', page);
+    });
+    
+    sniffer.on('entry', function (entry) {
+      entries.push(entry);
+      ee.emit('entry', entry);
+    });
 
-    uri = url.format(urlObj);
+    var currPage;
 
-    fetch(uri, function (err, page, pageEntries) {
-      if (err) { return cb(err); }
-      if (!page) { return cb(); }
-
+    sniffer.on('page', function (page) {
       pages.push(page);
-      entries = entries.concat(pageEntries);
-      ee.emit('page', page, entries);
+      ee.emit('page', page);
+      currPage = page;
+    });
 
+    sniffer.on('end', function () {
+      if (!currPage) { return cb(); }
       // Before fetching subpages we filter out based on the base url.
       var r = new RegExp('^' + settings.url);
-      var subpages = page._links.filter(function (link) {
+      var subpages = currPage._links.filter(function (link) {
         return r.test(link.href);
       });
       if (!subpages.length) { return cb(); }
@@ -109,6 +140,24 @@ module.exports = function (options) {
     });
   }
 
+
+  if (typeof settings.url !== 'string') {
+    throw new TypeError('URL must be a string');
+  }
+
+  //var matches = /^([a-z0-9+\.\-]+):/i.exec(settings.url);
+  //if (!matches || matches.length < 2) {
+  //  settings.url = 'http://' + settings.url;
+  //} else if ([ 'http', 'https' ].indexOf(matches[1]) === -1) {
+  //  return done(new Error('Unsupported scheme: ' + matches[1]));
+  //}
+
+  //var urlObj = url.parse(uri, true);
+  //if (!urlObj.hostname) {
+  //  return done(new Error('Invalid URL'));
+  //}
+
+  //settings.url = url.format(urlObj);
 
   process.nextTick(function () {
     fetchRecursive(settings.url, done);

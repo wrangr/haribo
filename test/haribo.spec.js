@@ -29,6 +29,28 @@ describe('haribo', function () {
     this.server.stop(done);
   });
 
+  it('should throw when URL not a string', function () {
+    assert.throws(function () {
+      haribo();
+    }, function (err) {
+      return err instanceof TypeError && /URL must be a string/i.test(err.message);
+    });
+  });
+
+  it('should produce HAR with _failures when page fails to load', function (done) {
+    haribo({ url: 'foo' })
+      .on('failure', function (page) {
+        assert.equal(page.id, 'foo');
+      })
+      .on('har', function (har) {
+        assert.equal(har.log.pages.length, 0);
+        assert.equal(har.log.entries.length, 0);
+        assert.equal(har.log._failures.length, 1);
+        assert.equal(har.log._failures[0].id, 'foo');
+      })
+      .on('end', done);
+  });
+
   it('should create default 1 page HAR (simple site)', function (done) {
     var baseurl = 'http://127.0.0.1:12345/01-simple/';
 
@@ -49,13 +71,12 @@ describe('haribo', function () {
           assert.equal(har.log.comment, '');
 
           assert.equal(har.log.pages[0].id, baseurl);
-          assert.equal(har.log.pages[0].comment, '');
+          //assert.equal(har.log.pages[0].comment, '');
           assert.equal(typeof har.log.pages[0].startedDateTime, 'string');
           assert.equal(har.log.pages[0].title, 'Site 1');
           assert.equal(typeof har.log.pages[0].pageTimings.onContentLoad, 'number');
           assert.equal(typeof har.log.pages[0].pageTimings.onLoad, 'number');
-          assert.equal(har.log.pages[0].pageTimings.comment, '');
-          //assert.equal(har.log.pages[0]._status, 200);
+          //assert.equal(har.log.pages[0].pageTimings.comment, '');
           assert.equal(typeof har.log.pages[0]._renderedSource, 'string');
           assert.equal(har.log.pages[0]._links.length, 2);
           assert.equal(har.log.pages[0]._links[0].text, 'About Us');
@@ -72,7 +93,7 @@ describe('haribo', function () {
             assert.equal(entry.cache.beforeRequest, null);
             assert.equal(entry.cache.afterRequest, null);
             assert.equal(entry.connection, '');
-            assert.equal(entry.comment, '');
+            //assert.equal(entry.comment, '');
             assert.equal(entry.request.method, 'GET');
             assert.equal(typeof entry.request.url, 'string');
             assert.equal(entry.request.httpVersion, 'HTTP/1.1');
@@ -81,7 +102,7 @@ describe('haribo', function () {
             assert.equal(entry.request.cookies.length, 0);
             assert.equal(entry.request.headersSize, -1);
             assert.equal(entry.request.bodySize, 0);
-            assert.equal(entry.request.comment, '');
+            //assert.equal(entry.request.comment, '');
 
             assert.equal(entry.response.status, 200);
             assert.equal(entry.response.statusText, 'OK');
@@ -91,7 +112,7 @@ describe('haribo', function () {
             assert.equal(entry.response.redirectURL, '');
             assert.equal(entry.response.headersSize, -1);
             assert.ok(entry.response.bodySize > 0);
-            assert.equal(entry.response.comment, '');
+            //assert.equal(entry.response.comment, '');
             assert.equal(typeof entry.response.content.size, 'number');
             assert.equal(typeof entry.response.content.mimeType, 'string');
 
