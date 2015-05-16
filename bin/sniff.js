@@ -26,21 +26,29 @@ var argv = minimist(phantom.args);
 var history = {};
 
 
+//
+// Default values for `options`.
+//
 var defaults = {
+  url: argv._.shift(),
   max: 1,
   include: [],
   exclude: []
 };
 
 
+//
+// Initialise `options` with `argv` and `defaults`.
+//
 var options = Object.keys(defaults).reduce(function (memo, key) {
   if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
   return memo;
 }, defaults);
 
-options.url = argv._.shift();
 
-
+//
+// This is where the action begins...
+//
 function main() {
   if (argv.v || argv.version) {
     console.log(pkg.version);
@@ -66,6 +74,9 @@ function main() {
 }
 
 
+//
+// Load given `href` and monitor resulting HTTP traffic (resources).
+//
 function sniff(href, cb) {
   var page = { id: href };
   var entries = [];
@@ -184,6 +195,9 @@ function base(urlObj) {
 }
 
 
+//
+// Extract and classify links from "sniffed" page.
+//
 function processLinks(page) {
   var links = webpage.evaluate(function () {
     var nodeList = document.getElementsByTagName('a');
@@ -228,8 +242,6 @@ function processLinks(page) {
   }, []);
 }
 
-
-function getSubpages() {}
 
 
 // ***** //
