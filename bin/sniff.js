@@ -19,8 +19,10 @@ var webpage = require('webpage').create();
 var url = require('../lib/url');
 var har = require('../lib/har');
 var pkg = require('../package.json');
+var argv = minimist(phantom.args);
 
 
+// Here we store visited pages to avoid visiting them more than once.
 var history = {};
 
 
@@ -31,7 +33,15 @@ var defaults = {
 };
 
 
-function main(argv) {
+var options = Object.keys(defaults).reduce(function (memo, key) {
+  if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
+  return memo;
+}, defaults);
+
+options.url = argv._.shift();
+
+
+function main() {
   if (argv.v || argv.version) {
     console.log(pkg.version);
     return exit(0);
@@ -52,19 +62,12 @@ function main(argv) {
     return exit(0);
   }
 
-  var options = Object.keys(defaults).reduce(function (memo, key) {
-    if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
-    return memo;
-  }, defaults);
-
-  options.url = argv._.shift();
-
-  sniff(options, done);
+  sniff(options.url, done);
 }
 
 
-function sniff(options, cb) {
-  var page = { id: options.url };
+function sniff(href, cb) {
+  var page = { id: href };
   var entries = [];
 
   webpage.onUrlChanged = function (targetUrl) {
@@ -129,7 +132,7 @@ function sniff(options, cb) {
     page._errors.push({ message: msg, trace: trace }); 
   };
 
-  webpage.open(options.url, function (status) {
+  webpage.open(href, function (status) {
     page._endTime = new Date();
     page._urlObj = url.parse(page.id);
     page._base = base(page._urlObj);
@@ -279,5 +282,5 @@ function done(err) {
 
 
 // Start the action...
-main(minimist(phantom.args));
+main();
 
