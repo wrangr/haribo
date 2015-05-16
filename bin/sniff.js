@@ -18,12 +18,9 @@ var minimist = require('minimist');
 var webpage = require('webpage').create();
 var url = require('../lib/url');
 var har = require('../lib/har');
+var history = require('../lib/history');
 var pkg = require('../package.json');
 var argv = minimist(phantom.args);
-
-
-// Here we store visited pages to avoid visiting them more than once.
-var history = {};
 
 
 //
@@ -42,6 +39,9 @@ var defaults = {
 //
 var options = Object.keys(defaults).reduce(function (memo, key) {
   if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
+  if (key === 'max' && typeof memo[key] === 'string') {
+    memo[key] = parseInt(memo[key], 10);
+  } 
   return memo;
 }, defaults);
 
@@ -162,9 +162,6 @@ function sniff(href, cb) {
     });
 
     page._links = processLinks(page);
-    page._links.forEach(function (link) {
-      log(link);
-    });
 
     page.pageTimings = {
       onContentLoad: -1,
@@ -177,15 +174,14 @@ function sniff(href, cb) {
 
     emit('page', page);
 
-    history[page.id] = (history[page.id] || 0) + 1;
+    history.addPage(page);
 
-    if (options.max && options.max <= Object.keys(history).length) {
+    if (options.max && options.max <= history.length) {
       return cb();
     }
 
-    log('FETCH MORE!!');
-    //fetchSubPages(subpages, cb);
-    cb();
+    var nextLink = history.pickNextLink();
+    sniff(nextLink.id, cb);
   });
 }
 
@@ -241,7 +237,6 @@ function processLinks(page) {
     return memo;
   }, []);
 }
-
 
 
 // ***** //

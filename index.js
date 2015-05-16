@@ -9,7 +9,6 @@ var script = path.join(__dirname, 'bin', 'sniff.js');
 
 
 function createHar(data, cb) {
-
   var har = {
     log: {
       version: '1.2',
@@ -51,7 +50,6 @@ function createHar(data, cb) {
       cb(null, parsed);
     }
   });
-
 }
  
 
@@ -64,18 +62,19 @@ module.exports = function (options) {
   }
 
   var args = [ script, options.url ];
+
+  [ 'max', 'include', 'exclude' ].forEach(function (key) {
+    if (!options.hasOwnProperty(key)) { return; }
+    args.push('--' + key);
+    args.push(options[key]);
+  });
+
   var child = cp.spawn(phantomjs.path, args);
   var parser = child.stdout.pipe(JSONStream.parse('*'));
   var ee = new events.EventEmitter();
   var data = [];
   
   parser.on('data', function (obj) {
-    if (obj.name === 'page') {
-      //var pageUrlObj = url.parse(obj.data.id);
-      //obj.data._links.forEach(function (link) {
-      //  link.internal = pageUrlObj.host === url.parse(link.href).host;
-      //});
-    }
     ee.emit(obj.name, obj.data);
     data.push(obj);
   });
