@@ -101,7 +101,6 @@ function sniff(href, cb) {
       entry._startReply = res;
     } else if (res.stage === 'end') {
       entry._endReply = res;
-      log(res);
       har.processEntry(entry);
       emit('entry', entry);
     }
