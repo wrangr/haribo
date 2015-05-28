@@ -2,7 +2,9 @@
 
 This is **experimental**: it will change and its probably broken. 
 
-[![Build Status](https://magnum.travis-ci.com/wrangr/haribo.svg?token=4uyuoxi9qhvAfjzUTB6y&branch=master)](https://magnum.travis-ci.com/wrangr/haribo)
+[![Build Status](https://travis-ci.org/wrangr/haribo.svg?branch=master)](https://travis-ci.org/wrangr/haribo)
+[![Dependency Status](https://david-dm.org/wrangr/haribo.svg?style=flat)](https://david-dm.org/wrangr/haribo)
+[![devDependency Status](https://david-dm.org/wrangr/haribo/dev-status.png)](https://david-dm.org/wrangr/haribo#info=devDependencies)
 
 ## CLI
 
