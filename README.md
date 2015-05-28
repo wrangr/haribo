@@ -17,10 +17,13 @@ Usage: haribo [ options ] <url>
 
 Options:
 
---out=</path/to/file>  Write HAR file to given path.
---max=<int>            Maximum number of pages to fetch.
---include=<pattern>    Include URLs mathing given pattern.
 --exclude=<pattern>    Exclude URLs mathing given pattern.
+--include=<pattern>    Include URLs mathing given pattern.
+--max=1                Maximum number of pages to fetch.
+--out=</path/to/file>  Write HAR file to given path.
+--screenshot=false     Include screenshots.
+--v-width=400          Viewport width.
+--v-height=300         Viewport height.
 -h, --help             Show this help.
 -v, --version          Show version.
 
