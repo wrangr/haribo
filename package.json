@@ -2,6 +2,7 @@
   "name": "haribo",
   "description": "HTTP Archive generator (HAR), but sweet.",
   "version": "0.0.0",
+  "repository": "wrangr/haribo",
   "author": {
     "name": "wrangr",
     "email": "hi@wrangr.com",
@@ -14,17 +15,17 @@
     "test": "gulp test"
   },
   "dependencies": {
-    "JSONStream": "^1.0.3",
-    "har-validator": "^1.7.0",
-    "lodash": "^3.8.0",
+    "JSONStream": "^1.0.4",
+    "har-validator": "^1.7.1",
+    "lodash": "^3.9.3",
     "minimist": "^1.1.1",
-    "phantomjs": "^1.9.16"
+    "phantomjs": "^1.9.17"
   },
   "devDependencies": {
     "gulp": "^3.8.11",
-    "gulp-jshint": "^1.10.0",
-    "gulp-mocha": "^2.0.1",
-    "hapi": "^8.4.0",
-    "jshint-stylish": "^1.0.2"
+    "gulp-jshint": "^1.11.0",
+    "gulp-mocha": "^2.1.0",
+    "hapi": "^8.5.2",
+    "jshint-stylish": "^2.0.0"
   }
 }
