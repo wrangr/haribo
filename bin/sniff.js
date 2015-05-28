@@ -28,9 +28,12 @@ var argv = minimist(phantom.args);
 //
 var defaults = {
   url: argv._.shift(),
-  max: 1,
+  exclude: [],
   include: [],
-  exclude: []
+  max: 1,
+  screenshot: false,
+  'v-width': 400,
+  'v-height': 300
 };
 
 
@@ -59,9 +62,12 @@ function main() {
       '',
       'Options:',
       '',
-      '--max=<int>            Maximum number of pages to fetch.',
-      '--include=<pattern>    Include URLs matching given pattern.',
       '--exclude=<pattern>    Exclude URLs matching given pattern.',
+      '--include=<pattern>    Include URLs matching given pattern.',
+      '--max=1                Maximum number of pages to fetch.',
+      '--screenshot=false     Include screenshots.',
+      '--v-width=400            Viewport width.',
+      '--v-height=300           Viewport height.',
       '-h, --help             Show this help.',
       '-v, --version          Show version.',
       '',
@@ -143,6 +149,11 @@ function sniff(href, cb) {
     page._errors.push({ message: msg, trace: trace }); 
   };
 
+  webpage.viewportSize = {
+    width: options['v-width'],
+    height: options['v-height']
+  };
+
   webpage.open(href, function (status) {
     page._endTime = new Date();
     page._urlObj = url.parse(page.id);
@@ -170,6 +181,10 @@ function sniff(href, cb) {
 
     if (page._onContentLoad) {
       page.pageTimings.onContentLoad = page._onContentLoad - page.startedDateTime;
+    }
+
+    if (options.screenshot) {
+      page._screenshot = webpage.renderBase64('PNG');
     }
 
     emit('page', page);

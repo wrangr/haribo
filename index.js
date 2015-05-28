@@ -53,6 +53,16 @@ function createHar(data, cb) {
 }
  
 
+var optionKeys = [
+  'exclude',
+  'include',
+  'max',
+  'screenshot',
+  'v-width',
+  'v-height'
+];
+
+
 module.exports = function (options) {
 
   options = options || {};
@@ -63,7 +73,7 @@ module.exports = function (options) {
 
   var args = [ script, options.url ];
 
-  [ 'max', 'include', 'exclude' ].forEach(function (key) {
+  optionKeys.forEach(function (key) {
     if (!options.hasOwnProperty(key)) { return; }
     args.push('--' + key);
     args.push(options[key]);
