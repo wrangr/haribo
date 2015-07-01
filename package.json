@@ -16,16 +16,16 @@
   },
   "dependencies": {
     "JSONStream": "^1.0.4",
-    "har-validator": "^1.7.1",
-    "lodash": "^3.9.3",
+    "har-validator": "^1.8.0",
+    "lodash": "^3.10.0",
     "minimist": "^1.1.1",
     "phantomjs": "^1.9.17"
   },
   "devDependencies": {
-    "gulp": "^3.8.11",
-    "gulp-jshint": "^1.11.0",
-    "gulp-mocha": "^2.1.0",
-    "hapi": "^8.5.2",
-    "jshint-stylish": "^2.0.0"
+    "gulp": "^3.9.0",
+    "gulp-jshint": "^1.11.1",
+    "gulp-mocha": "^2.1.2",
+    "hapi": "^8.6.1",
+    "jshint-stylish": "^2.0.1"
   }
 }
