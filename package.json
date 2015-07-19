@@ -3,11 +3,7 @@
   "description": "HTTP Archive generator (HAR), but sweet.",
   "version": "0.0.1",
   "repository": "wrangr/haribo",
-  "author": {
-    "name": "wrangr",
-    "email": "hi@wrangr.com",
-    "url": "https://wrangr.com/"
-  },
+  "license": "MIT",
   "bin": {
     "haribo": "./bin/haribo.js"
   },
