@@ -1,21 +1,23 @@
 #! /usr/bin/env node
 
-var fs = require('fs');
-var path = require('path');
-var util = require('util');
-var minimist = require('minimist');
+var Fs = require('fs');
+var Path = require('path');
+var Util = require('util');
+var Minimist = require('minimist');
 var _ = require('lodash');
-var pkg = require('../package.json');
-var argv = minimist(process.argv.slice(2));
+var Pkg = require('../package.json');
+
+
+var argv = Minimist(process.argv.slice(2));
 var url = argv._.shift();
 
 
 if (argv.v || argv.version) {
-  console.log(pkg.version);
+  console.log(Pkg.version);
   process.exit(0);
 } else if (!url || argv.h || argv.help) {
   console.log([
-    'Usage: ' + pkg.name + ' [ options ] <url>',
+    'Usage: ' + Pkg.name + ' [ options ] <url>',
     '',
     'Options:',
     '',
@@ -29,7 +31,7 @@ if (argv.v || argv.version) {
     '-h, --help             Show this help.',
     '-v, --version          Show version.',
     '',
-    pkg.author.name + ' ' + (new Date()).getFullYear()
+    Pkg.author.name + ' ' + (new Date()).getFullYear()
   ].join('\n'));
   process.exit(0);
 }
@@ -39,24 +41,29 @@ var options = _.extend(_.omit(argv, [ '_', 'out' ]), { url: url });
 var ee = require('../')(options);
 
 ee.on('error', function (err) {
+
   console.error(util.inspect(err, { depth: null }));
+
   if (err.stack) {
     console.error(err.stack);
   }
+
   process.exit(1);
 });
 
 ee.on('har', function (har) {
+
   var json = JSON.stringify(har, null, 2);
 
   if (argv.out) {
-    fs.writeFileSync(path.resolve(argv.out), json);
+    Fs.writeFileSync(Path.resolve(argv.out), json);
   } else {
     console.log(json);
   }
 });
 
 ee.on('end', function () {
+
   process.exit(0);
 });
 

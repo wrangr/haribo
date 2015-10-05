@@ -14,20 +14,21 @@
 //
 
 
-var minimist = require('minimist');
-var webpage = require('webpage').create();
-var url = require('../lib/url');
-var har = require('../lib/har');
-var history = require('../lib/history');
-var pkg = require('../package.json');
-var argv = minimist(phantom.args);
+var Minimist = require('minimist');
+var Webpage = require('webpage');
+var Url = require('../lib/url');
+var Har = require('../lib/har');
+var History = require('../lib/history');
+var Pkg = require('../package.json');
+
+
+var internals = {};
 
 
 //
 // Default values for `options`.
 //
-var defaults = {
-  url: argv._.shift(),
+internals.defaults = {
   exclude: [],
   include: [],
   max: 1,
@@ -38,113 +39,106 @@ var defaults = {
 
 
 //
-// Initialise `options` with `argv` and `defaults`.
-//
-var options = Object.keys(defaults).reduce(function (memo, key) {
-  if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
-  if (key === 'max' && typeof memo[key] === 'string') {
-    memo[key] = parseInt(memo[key], 10);
-  } 
-  return memo;
-}, defaults);
-
-
-//
 // This is where the action begins...
 //
-function main() {
-  if (argv.v || argv.version) {
-    console.log(pkg.version);
-    return exit(0);
-  } else if (argv.h || argv.help) {
-    console.log([
-      'Usage: ' + pkg.name + ' [ options ] <url>',
-      '',
-      'Options:',
-      '',
-      '--exclude=<pattern>    Exclude URLs matching given pattern.',
-      '--include=<pattern>    Include URLs matching given pattern.',
-      '--max=1                Maximum number of pages to fetch.',
-      '--screenshot=false     Include screenshots.',
-      '--v-width=400            Viewport width.',
-      '--v-height=300           Viewport height.',
-      '-h, --help             Show this help.',
-      '-v, --version          Show version.',
-      '',
-      pkg.author.name + ' ' + (new Date()).getFullYear()
-    ].join('\n'));
-    return exit(0);
-  }
+internals.main = function (argv) {
 
-  sniff(options.url, done);
-}
+  var options = Object.keys(internals.defaults).reduce(function (memo, key) {
+
+    if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
+    if (key === 'max' && typeof memo[key] === 'string') {
+      memo[key] = parseInt(memo[key], 10);
+    } 
+    return memo;
+  }, internals.defaults);
+
+  internals.sniff(argv._.shift(), options);
+};
 
 
 //
 // Load given `href` and monitor resulting HTTP traffic (resources).
 //
-function sniff(href, cb) {
+internals.sniff = function (href, options) {
+
+  var webpage = Webpage.create();
+  var cb = internals.done(webpage);
   var page = { id: href };
   var entries = [];
 
+  console.log(typeof cb);
+  return;
+
   webpage.onUrlChanged = function (targetUrl) {
+
     if (!page._redirects) { page._redirects = []; }
     page._redirects.push(page.id);
     page.id = targetUrl;
   };
 
   webpage.onLoadStarted = function () {
+
     page.startedDateTime = new Date();
   };
 
   webpage.onResourceRequested = function (req) {
-    entries[req.id - 1] = har.createEntry(page, req);
+
+    entries[req.id - 1] = Har.createEntry(page, req);
   };
 
   webpage.onResourceReceived = function (res) {
+
     var entry = entries[res.id - 1];
     if (res.stage === 'start') {
       entry._startReply = res;
     } else if (res.stage === 'end') {
       entry._endReply = res;
-      har.processEntry(entry);
-      emit('entry', entry);
+      Har.processEntry(entry);
+      internals.emit('entry', entry);
     }
   };
 
   // timeout handling http://stackoverflow.com/a/18837957/47573
   webpage.settings.resourceTimeout = 10000; // 10 seconds
   webpage.onResourceTimeout = function (err) {
+
     var entry = entries[err.id -1];
     entry._errorReply = err;
-    har.processEntry(entry);
-    emit('entry', entry);
+    Har.processEntry(entry);
+    internals.emit('entry', entry);
   };
 
   webpage.onResourceError = function (resourceError) {
+
     // TODO: Handle resource errors?
     // console.error('resourceError', resourceError);
   };
 
   // https://gist.github.com/wangyang0123/2475509#comment-666382
   webpage.onInitialized = function () {
+
     webpage.evaluate(function (domContentLoadedMsg) {
+
       document.addEventListener('DOMContentLoaded', function () {
+
         window.callPhantom('DOMContentLoaded');
       }, false);
     });
   };
 
   webpage.onCallback = function (data) {
+
     page._onContentLoad = new Date();
   };
 
   webpage.onConsoleMessage = function (msg, line, sourceId) {
+
     if (!page._consoleMessages) { page._consoleMessages = []; }
     page._consoleMessages.push({ message: msg, line: line, sourceId: sourceId }); 
   };
 
   webpage.onError = function (msg, trace) {
+
     if (!page._errors) { page._errors = []; }
     page._errors.push({ message: msg, trace: trace }); 
   };
@@ -155,24 +149,27 @@ function sniff(href, cb) {
   };
 
   webpage.open(href, function (status) {
+
     page._endTime = new Date();
-    page._urlObj = url.parse(page.id);
-    page._base = base(page._urlObj);
+    page._urlObj = Url.parse(page.id);
+    page._base = internals.base(page._urlObj);
 
     if (status !== 'success') {
-      emit('failure', page);
+      internals.emit('failure', page);
       return cb();
     }
 
     page.title = webpage.evaluate(function () {
+
       return document.title;
     });
 
     page._renderedSource = webpage.evaluate(function () {
+
       return document.documentElement.outerHTML;
     });
 
-    page._links = processLinks(page);
+    page._links = internals.processLinks(page);
 
     page.pageTimings = {
       onContentLoad: -1,
@@ -187,34 +184,38 @@ function sniff(href, cb) {
       page._screenshot = webpage.renderBase64('PNG');
     }
 
-    emit('page', page);
+    internals.emit('page', page);
 
-    history.addPage(page);
+    History.addPage(page);
 
-    if (options.max && options.max <= history.length) {
+    if (options.max && options.max <= History.length) {
       return cb();
     }
 
-    var nextLink = history.pickNextLink();
+    var nextLink = History.pickNextLink();
     if (!nextLink) { return cb(); }
-    sniff(nextLink.id, cb);
+    internals.sniff(nextLink.id, cb);
   });
-}
+};
 
 
-function base(urlObj) {
+internals.base = function (urlObj) {
+
   return urlObj.protocol + '//' + urlObj.host + urlObj.path;
-}
+};
 
 
 //
 // Extract and classify links from "sniffed" page.
 //
-function processLinks(page) {
+internals.processLinks = function (page) {
+
   var links = webpage.evaluate(function () {
+
     var nodeList = document.getElementsByTagName('a');
     var nodeArray = Array.prototype.slice.call(nodeList);
     return nodeArray.reduce(function (memo, node) {
+
       var href = node.href;
       if (!href || /^(#|mailto)/.test(href)) { return memo; }
       var link = { href: href, text: node.innerHTML.replace(/\n/g, '') };
@@ -229,11 +230,13 @@ function processLinks(page) {
   var r = new RegExp('^' + page._urlObj.pathname);
 
   return links.reduce(function (memo, link) {
-    link.urlObj = url.parse(link.href, true);
 
-    var id = base(link.urlObj);
+    link.urlObj = Url.parse(link.href, true);
+
+    var id = internals.base(link.urlObj);
 
     var found = memo.filter(function (l) {
+
       return l.id === id;
     }).shift();
 
@@ -252,58 +255,60 @@ function processLinks(page) {
 
     return memo;
   }, []);
-}
+};
 
 
 // ***** //
 
 
-var hasEmitted = false;
-var isDone = false;
+internals.hasEmitted = false;
+internals.isDone = false;
 
 
-function log(val) {
-  console.log(JSON.stringify(val, null, 2));
-}
+internals.exit = function (code) {
 
-
-function exit(code) {
   setTimeout(function () { phantom.exit(code); }, 0);
-}
+};
 
 
-function emit(name, data) {
-  if (isDone) { return; }
-  if (!hasEmitted) {
-    hasEmitted = true;
+internals.emit = function (name, data) {
+
+  if (internals.isDone) { return; }
+  if (!internals.hasEmitted) {
+    internals.hasEmitted = true;
     console.log('[');
   } else {
     console.log(',');
   }
+
   console.log(JSON.stringify({ name: name, data: data }));
-}
+};
 
 
-function done(err) {
-  var code = 0;
+internals.done = function (webpage) {
 
-  if (isDone) { return; }
+  return function (err) {
 
-  if (webpage) {
-    webpage.close();
-  }
+    var code = 0;
 
-  if (err) {
-    code = 1;
-    emit('error', err);
-  }
+    if (internals.isDone) { return; }
 
-  console.log(']');
-  isDone = true;
-  exit(code);
-}
+    if (webpage) {
+      webpage.close();
+    }
+
+    if (err) {
+      code = 1;
+      internals.emit('error', err);
+    }
+
+    console.log(']');
+    internals.isDone = true;
+    internals.exit(code);
+  };
+};
 
 
 // Start the action...
-main();
+internals.main(Minimist(phantom.args));
 

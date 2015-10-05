@@ -1,17 +1,21 @@
-var path = require('path');
+var Path = require('path');
 var Hapi = require('hapi');
 
+
 exports.start = function (done) {
+  
   var server = new Hapi.Server();
 
   server.connection({ port: 12345 });
+
+  server.register(require('inert'), function () {});
 
   server.route({
     method: 'GET',
     path: '/{p*}',
     handler: {
       directory: {
-        path: path.join(__dirname, 'sites')
+        path: Path.join(__dirname, 'sites')
       }
     }
   });
@@ -20,6 +24,7 @@ exports.start = function (done) {
     method: 'GET',
     path: '/_internal_redirect',
     handler: function (req, reply) {
+
       reply.redirect('/01-simple');
     }
   });
@@ -28,6 +33,7 @@ exports.start = function (done) {
     method: 'GET',
     path: '/_external_redirect',
     handler: function (req, reply) {
+
       reply.redirect('https://github.com/');
     }
   });
