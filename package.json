@@ -20,7 +20,7 @@
     "har-validator": "^1.8.0",
     "lodash": "^3.10.0",
     "minimist": "^1.1.1",
-    "phantomjs": "^1.9.17"
+    "phantomjs": "^1.9.18"
   },
   "devDependencies": {
     "gulp": "^3.9.0",

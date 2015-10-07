@@ -52,22 +52,19 @@ internals.main = function (argv) {
     return memo;
   }, internals.defaults);
 
-  internals.sniff(argv._.shift(), options);
+  var webpage = Webpage.create();
+  var cb = internals.done(webpage);
+  internals.sniff(webpage, argv._.shift(), options, cb);
 };
 
 
 //
 // Load given `href` and monitor resulting HTTP traffic (resources).
 //
-internals.sniff = function (href, options) {
+internals.sniff = function (webpage, href, options, cb) {
 
-  var webpage = Webpage.create();
-  var cb = internals.done(webpage);
   var page = { id: href };
   var entries = [];
-
-  console.log(typeof cb);
-  return;
 
   webpage.onUrlChanged = function (targetUrl) {
 
@@ -169,7 +166,7 @@ internals.sniff = function (href, options) {
       return document.documentElement.outerHTML;
     });
 
-    page._links = internals.processLinks(page);
+    page._links = internals.processLinks(webpage, page);
 
     page.pageTimings = {
       onContentLoad: -1,
@@ -194,7 +191,7 @@ internals.sniff = function (href, options) {
 
     var nextLink = History.pickNextLink();
     if (!nextLink) { return cb(); }
-    internals.sniff(nextLink.id, cb);
+    internals.sniff(webpage, nextLink.id, options, cb);
   });
 };
 
@@ -208,7 +205,7 @@ internals.base = function (urlObj) {
 //
 // Extract and classify links from "sniffed" page.
 //
-internals.processLinks = function (page) {
+internals.processLinks = function (webpage, page) {
 
   var links = webpage.evaluate(function () {
 
@@ -265,12 +262,6 @@ internals.hasEmitted = false;
 internals.isDone = false;
 
 
-internals.exit = function (code) {
-
-  setTimeout(function () { phantom.exit(code); }, 0);
-};
-
-
 internals.emit = function (name, data) {
 
   if (internals.isDone) { return; }
@@ -304,7 +295,9 @@ internals.done = function (webpage) {
 
     console.log(']');
     internals.isDone = true;
-    internals.exit(code);
+    setTimeout(function () { phantom.exit(code); }, 0);
+    phantom.onError = function(){};
+    throw new Error('');
   };
 };
 

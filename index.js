@@ -90,7 +90,7 @@ module.exports = function (options) {
   var parser = child.stdout.pipe(JSONStream.parse('*'));
   var ee = new Events.EventEmitter();
   var data = [];
-  
+
   parser.on('data', function (obj) {
 
     ee.emit(obj.name, obj.data);
