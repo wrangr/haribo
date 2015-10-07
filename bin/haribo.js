@@ -37,12 +37,12 @@ if (argv.v || argv.version) {
 }
 
 
-var options = _.extend(_.omit(argv, [ '_', 'out' ]), { url: url });
+var options = _.extend(_.omit(argv, ['_', 'out']), { url: url });
 var ee = require('../')(options);
 
 ee.on('error', function (err) {
 
-  console.error(util.inspect(err, { depth: null }));
+  console.error(Util.inspect(err, { depth: null }));
 
   if (err.stack) {
     console.error(err.stack);

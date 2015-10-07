@@ -19,7 +19,6 @@ var Webpage = require('webpage');
 var Url = require('../lib/url');
 var Har = require('../lib/har');
 var History = require('../lib/history');
-var Pkg = require('../package.json');
 
 
 var internals = {};
@@ -48,7 +47,7 @@ internals.main = function (argv) {
     if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
     if (key === 'max' && typeof memo[key] === 'string') {
       memo[key] = parseInt(memo[key], 10);
-    } 
+    }
     return memo;
   }, internals.defaults);
 
@@ -99,7 +98,7 @@ internals.sniff = function (webpage, href, options, cb) {
   webpage.settings.resourceTimeout = 10000; // 10 seconds
   webpage.onResourceTimeout = function (err) {
 
-    var entry = entries[err.id -1];
+    var entry = entries[err.id - 1];
     entry._errorReply = err;
     Har.processEntry(entry);
     internals.emit('entry', entry);
@@ -131,13 +130,13 @@ internals.sniff = function (webpage, href, options, cb) {
   webpage.onConsoleMessage = function (msg, line, sourceId) {
 
     if (!page._consoleMessages) { page._consoleMessages = []; }
-    page._consoleMessages.push({ message: msg, line: line, sourceId: sourceId }); 
+    page._consoleMessages.push({ message: msg, line: line, sourceId: sourceId });
   };
 
   webpage.onError = function (msg, trace) {
 
     if (!page._errors) { page._errors = []; }
-    page._errors.push({ message: msg, trace: trace }); 
+    page._errors.push({ message: msg, trace: trace });
   };
 
   webpage.viewportSize = {
@@ -246,7 +245,7 @@ internals.processLinks = function (webpage, page) {
         count: 1,
         internal: page._urlObj.host === link.urlObj.host,
         subpage: link.internal && r.test(link.urlObj.pathname),
-        instances: [ link ]
+        instances: [link]
       });
     }
 
@@ -295,9 +294,11 @@ internals.done = function (webpage) {
 
     console.log(']');
     internals.isDone = true;
-    setTimeout(function () { phantom.exit(code); }, 0);
-    phantom.onError = function(){};
-    throw new Error('');
+
+    setTimeout(function () {
+
+      phantom.exit(code);
+    }, 0);
   };
 };
 

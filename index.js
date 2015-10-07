@@ -45,20 +45,18 @@ internals.createHar = function (data, cb) {
   var stringified = JSON.stringify(har);
   var parsed = JSON.parse(stringified);
 
-  Validate(parsed, function (err, valid) {
+  Validate(parsed).then(function (valid) {
 
-    if (err) {
-      cb(err);
-    } else if (!valid) {
+    if (!valid) {
       cb(new Error('Invalid HAR format'));
     } else {
       cb(null, parsed);
     }
-  });
+  }, cb);
 };
- 
 
-var optionKeys = [
+
+internals.optionKeys = [
   'exclude',
   'include',
   'max',
@@ -77,9 +75,9 @@ module.exports = function (options) {
   }
 
   var script = Path.join(__dirname, 'bin', 'sniff.js');
-  var args = [ script, options.url ];
+  var args = [script, options.url];
 
-  optionKeys.forEach(function (key) {
+  internals.optionKeys.forEach(function (key) {
 
     if (!options.hasOwnProperty(key)) { return; }
     args.push('--' + key);

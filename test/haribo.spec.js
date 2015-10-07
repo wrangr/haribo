@@ -11,7 +11,7 @@ describe('haribo', function () {
   this.timeout(30 * 1000);
 
   before(function (done) {
-    
+
     this.server = Server.start(done);
   });
 
@@ -34,7 +34,6 @@ describe('haribo', function () {
   it('should produce HAR with _failures when page fails to load', function (done) {
 
     Haribo({ url: 'foo' })
-      .on('error', console.error)
       .on('failure', function (page) {
 
         Assert.equal(page.id, 'foo');
@@ -56,9 +55,8 @@ describe('haribo', function () {
     Haribo({ url: baseurl })
       .on('har', function (har) {
 
-        Validate(har, function (err, valid) {
+        Validate(har).then(function (valid) {
 
-          Assert.ok(!err);
           Assert.ok(valid);
           Assert.equal(har.log.version, '1.2');
           Assert.equal(har.log.creator.name, Pkg.name);
@@ -192,11 +190,12 @@ describe('haribo', function () {
 
   it.skip('should handle internal redirect on baseurl', function (done) {
 
-    var baseurl = 'http://127.0.0.1:12345/_internal_redirect';
-    Haribo({ url: baseurl }).on('har', function (har) {
+    //var baseurl = 'http://127.0.0.1:12345/_internal_redirect';
+    //Haribo({ url: baseurl }).on('har', function (har) {
 
-      console.log(har.log);
-    }).on('end', done);
+      //console.log(har.log);
+    //}).on('end', done);
+    done();
   });
 
   it('should handle internal redirect on pages');
@@ -205,6 +204,7 @@ describe('haribo', function () {
 
     //var baseurl = 'http://127.0.0.1:12345/_external_redirect';
     //Haribo({ url: });
+    done();
   });
 
   it('should handle resource errors');

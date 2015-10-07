@@ -3,7 +3,7 @@ var Hapi = require('hapi');
 
 
 exports.start = function (done) {
-  
+
   var server = new Hapi.Server();
 
   server.connection({ port: 12345 });
