@@ -102,7 +102,10 @@ module.exports = function (options) {
 
     internals.createHar(data, function (err, json) {
 
-      if (err) { return ee.emit('error', err); }
+      if (err) {
+        err.data = data;
+        return ee.emit('error', err);
+      }
       ee.emit('har', json);
       ee.emit('end');
     });
