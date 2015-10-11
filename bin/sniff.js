@@ -31,6 +31,7 @@ internals.defaults = {
   exclude: [],
   include: [],
   max: 1,
+  delay: 3, // in seconds
   screenshot: false,
   'v-width': 400,
   'v-height': 300
@@ -45,14 +46,18 @@ internals.main = function (argv) {
   var options = Object.keys(internals.defaults).reduce(function (memo, key) {
 
     if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
-    if (key === 'max' && typeof memo[key] === 'string') {
+
+    if (typeof internals.defaults[key] === 'number' &&
+        typeof memo[key] === 'string') {
       memo[key] = parseInt(memo[key], 10);
     }
+
     return memo;
   }, internals.defaults);
 
   var webpage = Webpage.create();
   var cb = internals.done(webpage);
+
   internals.sniff(webpage, argv._.shift(), options, cb);
 };
 
@@ -155,18 +160,6 @@ internals.sniff = function (webpage, href, options, cb) {
       return cb();
     }
 
-    page.title = webpage.evaluate(function () {
-
-      return document.title;
-    });
-
-    page._renderedSource = webpage.evaluate(function () {
-
-      return document.documentElement.outerHTML;
-    });
-
-    page._links = internals.processLinks(webpage, page);
-
     page.pageTimings = {
       onContentLoad: -1,
       onLoad: page._endTime - page.startedDateTime
@@ -176,21 +169,41 @@ internals.sniff = function (webpage, href, options, cb) {
       page.pageTimings.onContentLoad = page._onContentLoad - page.startedDateTime;
     }
 
-    if (options.screenshot) {
-      page._screenshot = webpage.renderBase64('PNG');
-    }
+    window.setTimeout(function () {
 
-    internals.emit('page', page);
+      page.title = webpage.evaluate(function () {
 
-    History.addPage(page);
+        return document.title;
+      });
 
-    if (options.max && options.max <= History.length) {
-      return cb();
-    }
+      page._description = webpage.evaluate(function () {
 
-    var nextLink = History.pickNextLink();
-    if (!nextLink) { return cb(); }
-    internals.sniff(webpage, nextLink.id, options, cb);
+        return document.querySelector('meta[name="description"]').content;
+      });
+
+      page._renderedSource = webpage.evaluate(function () {
+
+        return document.documentElement.outerHTML;
+      });
+
+      page._links = internals.processLinks(webpage, page);
+
+      if (options.screenshot) {
+        page._screenshot = webpage.renderBase64('PNG');
+      }
+
+      internals.emit('page', page);
+
+      History.addPage(page);
+
+      if (options.max && options.max <= History.length) {
+        return cb();
+      }
+
+      var nextLink = History.pickNextLink();
+      if (!nextLink) { return cb(); }
+      internals.sniff(webpage, nextLink.id, options, cb);
+    }, options.delay * 1000);
   });
 };
 

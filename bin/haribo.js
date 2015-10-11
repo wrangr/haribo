@@ -24,6 +24,8 @@ if (argv.v || argv.version) {
     '--exclude=<pattern>    Exclude URLs mathing given pattern.',
     '--include=<pattern>    Include URLs mathing given pattern.',
     '--max=1                Maximum number of pages to fetch.',
+    '--delay=3              How long to wait after page loads to get rendered',
+    '                       source and screenshots.',
     '--out=</path/to/file>  Write HAR file to given path.',
     '--screenshot=false     Include screenshots.',
     '--v-width=400          Viewport width.',

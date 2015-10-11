@@ -60,6 +60,7 @@ internals.optionKeys = [
   'exclude',
   'include',
   'max',
+  'delay',
   'screenshot',
   'v-width',
   'v-height'
@@ -81,7 +82,7 @@ module.exports = function (options) {
 
     if (!options.hasOwnProperty(key)) { return; }
     args.push('--' + key);
-    args.push(options[key]);
+    args.push('' + options[key]);
   });
 
   var child = ChildProcess.spawn(Phantomjs.path, args);
