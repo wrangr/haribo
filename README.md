@@ -1,6 +1,6 @@
 # haribo
 
-This is **experimental**: it will change and its probably broken. 
+This is **experimental**: it will change and its probably broken.
 
 [![Build Status](https://travis-ci.org/wrangr/haribo.svg?branch=master)](https://travis-ci.org/wrangr/haribo)
 [![Dependency Status](https://david-dm.org/wrangr/haribo.svg?style=flat)](https://david-dm.org/wrangr/haribo)
@@ -12,7 +12,7 @@ This is **experimental**: it will change and its probably broken.
 npm install -g haribo
 ```
 
-```sh
+```
 Usage: haribo [ options ] <url>
 
 Options:
@@ -20,6 +20,8 @@ Options:
 --exclude=<pattern>    Exclude URLs mathing given pattern.
 --include=<pattern>    Include URLs mathing given pattern.
 --max=1                Maximum number of pages to fetch.
+--delay=3              How long to wait after page loads to get rendered
+                       source and screenshots.
 --out=</path/to/file>  Write HAR file to given path.
 --screenshot=false     Include screenshots.
 --v-width=400          Viewport width.
@@ -27,7 +29,7 @@ Options:
 -h, --help             Show this help.
 -v, --version          Show version.
 
-wrangr 2015
+Wrangr 2015
 ```
 
 ## Programmatically
