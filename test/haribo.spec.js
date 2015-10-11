@@ -188,6 +188,17 @@ describe('haribo', function () {
       .on('end', done);
   });
 
+  it('should ignore data uris', function (done) {
+
+    Haribo({ url: 'http://127.0.0.1:12345/04-data-url' })
+      .on('har', function (har) {
+
+        Assert.equal(har.log.pages.length, 1);
+        Assert.equal(har.log.entries.length, 1);
+      })
+      .on('end', done);
+  });
+
   it.skip('should handle internal redirect on baseurl', function (done) {
 
     //var baseurl = 'http://127.0.0.1:12345/_internal_redirect';
