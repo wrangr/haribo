@@ -1,7 +1,7 @@
 {
   "name": "haribo",
   "description": "HTTP Archive generator (HAR), but sweet.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "repository": "wrangr/haribo",
   "license": "MIT",
   "author": {
