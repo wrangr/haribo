@@ -30,6 +30,7 @@ if (argv.v || argv.version) {
     '--screenshot=false     Include screenshots.',
     '--v-width=400          Viewport width.',
     '--v-height=300         Viewport height.',
+    '--user-agent=''        User agent string.',
     '-h, --help             Show this help.',
     '-v, --version          Show version.',
     '',

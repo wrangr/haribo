@@ -33,8 +33,9 @@ internals.defaults = {
   max: 1,
   delay: 3, // in seconds
   screenshot: false,
-  'v-width': 400,
-  'v-height': 300
+  'v-width': 320,
+  'v-height': 568,
+  'user-agent': ''
 };
 
 
@@ -57,6 +58,12 @@ internals.main = function (argv) {
 
   var webpage = Webpage.create();
   var cb = internals.done(webpage);
+
+  if (options['user-agent']) {
+    webpage.customHeaders = {
+      'user-agent': options['user-agent']
+    };
+  }
 
   internals.sniff(webpage, argv._.shift(), options, cb);
 };

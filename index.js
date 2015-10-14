@@ -63,7 +63,8 @@ internals.optionKeys = [
   'delay',
   'screenshot',
   'v-width',
-  'v-height'
+  'v-height',
+  'user-agent'
 ];
 
 
