@@ -1,14 +1,17 @@
-var Gulp = require('gulp');
-var Eslint = require('gulp-eslint');
-var Mocha = require('gulp-mocha');
+'use strict';
 
 
-var internals = {
+const Gulp = require('gulp');
+const Eslint = require('gulp-eslint');
+const Mocha = require('gulp-mocha');
+
+
+const internals = {
   files: ['gulpfile.js', 'index.js', 'lib/**/*.js', 'test/**/*.js']
 };
 
 
-Gulp.task('lint', function () {
+Gulp.task('lint', () => {
 
   return Gulp.src(internals.files)
     .pipe(Eslint())
@@ -17,13 +20,13 @@ Gulp.task('lint', function () {
 });
 
 
-Gulp.task('test', ['lint'], function () {
+Gulp.task('test', ['lint'], () => {
 
   return Gulp.src('test/**/*.spec.js', { read: false }).pipe(Mocha());
 });
 
 
-Gulp.task('watch', function () {
+Gulp.task('watch', () => {
 
   Gulp.watch(internals.files, ['test']);
 });

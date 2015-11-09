@@ -1,14 +1,22 @@
-var Path = require('path');
-var Hapi = require('hapi');
+'use strict';
+
+
+const Path = require('path');
+const Hapi = require('hapi');
 
 
 exports.start = function (done) {
 
-  var server = new Hapi.Server();
+  const server = new Hapi.Server();
 
   server.connection({ port: 12345 });
 
-  server.register(require('inert'), function () {});
+  server.register(require('inert'), (err) => {
+
+    if (err) {
+      return console.error(err);
+    }
+  });
 
   server.route({
     method: 'GET',

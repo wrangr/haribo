@@ -1,18 +1,21 @@
-var ChildProcess = require('child_process');
-var Path = require('path');
-var Events = require('events');
-var Phantomjs = require('phantomjs');
-var JSONStream = require('JSONStream');
-var Validate = require('har-validator');
-var Pkg = require('./package.json');
+'use strict';
 
 
-var internals = {};
+const ChildProcess = require('child_process');
+const Path = require('path');
+const Events = require('events');
+const Phantomjs = require('phantomjs');
+const JSONStream = require('JSONStream');
+const Validate = require('har-validator');
+const Pkg = require('./package.json');
+
+
+const internals = {};
 
 
 internals.createHar = function (data, cb) {
 
-  var har = {
+  const har = {
     log: {
       version: '1.2',
       creator: {
@@ -30,9 +33,12 @@ internals.createHar = function (data, cb) {
     }
   };
 
-  data.forEach(function (obj) {
+  data.forEach((obj) => {
 
-    if (obj.data._ignore === true) { return; }
+    if (obj.data._ignore === true) {
+      return;
+    }
+
     if (obj.name === 'page') {
       har.log.pages.push(obj.data);
     } else if (obj.name === 'entry') {
@@ -42,10 +48,10 @@ internals.createHar = function (data, cb) {
     }
   });
 
-  var stringified = JSON.stringify(har);
-  var parsed = JSON.parse(stringified);
+  const stringified = JSON.stringify(har);
+  const parsed = JSON.parse(stringified);
 
-  Validate(parsed).then(function (valid) {
+  Validate(parsed).then((valid) => {
 
     if (!valid) {
       cb(new Error('Invalid HAR format'));
@@ -76,32 +82,37 @@ module.exports = function (options) {
     throw new TypeError('URL must be a string');
   }
 
-  var script = Path.join(__dirname, 'bin', 'sniff.js');
-  var args = [script, options.url];
+  const script = Path.join(__dirname, 'bin', 'sniff.js');
+  const args = [script, options.url];
 
-  internals.optionKeys.forEach(function (key) {
+  internals.optionKeys.forEach((key) => {
 
-    if (!options.hasOwnProperty(key)) { return; }
+    if (!options.hasOwnProperty(key)) {
+      return;
+    }
+
     args.push('--' + key);
     args.push('' + options[key]);
   });
 
-  var child = ChildProcess.spawn(Phantomjs.path, args);
-  var parser = child.stdout.pipe(JSONStream.parse('*'));
-  var ee = new Events.EventEmitter();
-  var data = [];
+  const child = ChildProcess.spawn(Phantomjs.path, args);
+  const parser = child.stdout.pipe(JSONStream.parse('*'));
+  const ee = new Events.EventEmitter();
+  const data = [];
 
-  parser.on('data', function (obj) {
+  parser.on('data', (obj) => {
 
     ee.emit(obj.name, obj.data);
     data.push(obj);
   });
 
-  child.on('close', function (code) {
+  child.on('close', (code) => {
 
-    if (code > 0) { return ee.emit('error', new Error('PhantomJS crashed')); }
+    if (code > 0) {
+      return ee.emit('error', new Error('PhantomJS crashed'));
+    }
 
-    internals.createHar(data, function (err, json) {
+    internals.createHar(data, (err, json) => {
 
       if (err) {
         err.data = data;

@@ -2,3 +2,6 @@ lib/punycode.js
 lib/querystring.js
 lib/url.js
 lib/util.js
+
+lib/har.js
+lib/history.js

@@ -1,44 +1,49 @@
-var Assert = require('assert');
-var Validate = require('har-validator');
-var Phantomjs = require('phantomjs');
-var Pkg = require('../package.json');
-var Server = require('./server');
-var Haribo = require('../');
+'use strict';
+
+
+const Assert = require('assert');
+const Validate = require('har-validator');
+const Phantomjs = require('phantomjs');
+const Pkg = require('../package.json');
+const Server = require('./server');
+const Haribo = require('../');
 
 
 describe('haribo', function () {
 
   this.timeout(30 * 1000);
 
-  before(function (done) {
+  let server;
 
-    this.server = Server.start(done);
+  before((done) => {
+
+    server = Server.start(done);
   });
 
-  after(function (done) {
+  after((done) => {
 
-    this.server.stop(done);
+    server.stop(done);
   });
 
-  it('should throw when URL not a string', function () {
+  it('should throw when URL not a string', () => {
 
-    Assert.throws(function () {
+    Assert.throws(() => {
 
       Haribo();
-    }, function (err) {
+    }, (err) => {
 
       return err instanceof TypeError && /URL must be a string/i.test(err.message);
     });
   });
 
-  it('should produce HAR with _failures when page fails to load', function (done) {
+  it('should produce HAR with _failures when page fails to load', (done) => {
 
     Haribo({ url: 'foo' })
-      .on('failure', function (page) {
+      .on('failure', (page) => {
 
         Assert.equal(page.id, 'foo');
       })
-      .on('har', function (har) {
+      .on('har', (har) => {
 
         Assert.equal(har.log.pages.length, 0);
         Assert.equal(har.log.entries.length, 0);
@@ -48,14 +53,14 @@ describe('haribo', function () {
       .on('end', done);
   });
 
-  it('should create default 1 page HAR (simple site)', function (done) {
+  it('should create default 1 page HAR (simple site)', (done) => {
 
-    var baseurl = 'http://127.0.0.1:12345/01-simple/';
+    const baseurl = 'http://127.0.0.1:12345/01-simple/';
 
     Haribo({ url: baseurl })
-      .on('har', function (har) {
+      .on('har', (har) => {
 
-        Validate(har).then(function (valid) {
+        Validate(har).then((valid) => {
 
           Assert.ok(valid);
           Assert.equal(har.log.version, '1.2');
@@ -65,9 +70,9 @@ describe('haribo', function () {
           Assert.equal(har.log.browser.name, 'PhantomJS');
           Assert.equal(har.log.browser.version, Phantomjs.version);
 
-          var pages = har.log.pages;
+          const pages = har.log.pages;
           Assert.equal(pages.length, 1);
-          var page = pages[0];
+          const page = pages[0];
           Assert.equal(page.id, baseurl);
           Assert.equal(typeof page.startedDateTime, 'string');
           Assert.equal(page.title, 'Site 1');
@@ -76,8 +81,8 @@ describe('haribo', function () {
           Assert.equal(typeof page._renderedSource, 'string');
           Assert.equal(page._links.length, 2);
 
-          var link1 = page._links[0];
-          var link2 = page._links[1];
+          const link1 = page._links[0];
+          const link2 = page._links[1];
           Assert.equal(link1.id, baseurl + 'about.html');
           Assert.equal(link1.count, 1);
           Assert.equal(link1.internal, true);
@@ -90,7 +95,7 @@ describe('haribo', function () {
           Assert.equal(link2.instances[0].href, 'https://twitter.com/lupomontero');
 
           Assert.equal(har.log.entries.length, 2);
-          har.log.entries.forEach(function (entry) {
+          har.log.entries.forEach((entry) => {
 
             Assert.equal(entry.pageref, baseurl);
             Assert.equal(typeof entry.startedDateTime, 'string');
@@ -132,34 +137,34 @@ describe('haribo', function () {
       .on('end', done);
   });
 
-  it('should create 2 page HAR (simple site)', function (done) {
+  it('should create 2 page HAR (simple site)', (done) => {
 
-    var baseurl = 'http://127.0.0.1:12345/01-simple/';
+    const baseurl = 'http://127.0.0.1:12345/01-simple/';
 
     Haribo({ url: baseurl, max: 2 })
-      .on('har', function (har) {
+      .on('har', (har) => {
 
         Assert.equal(har.log.pages.length, 2);
       })
       .on('end', done);
   });
 
-  it('should handle 403 on baseurl', function (done) {
+  it('should handle 403 on baseurl', (done) => {
 
-    var baseurl = 'http://127.0.0.1:12345/02-forbidden/';
+    const baseurl = 'http://127.0.0.1:12345/02-forbidden/';
 
     // This URL returns a 403 as there is no index file and directory listing is
     // not enabled.
 
     Haribo({ url: baseurl })
-      .on('har', function (har) {
+      .on('har', (har) => {
 
-        var page = har.log.pages[0];
+        const page = har.log.pages[0];
         Assert.equal(page.id, baseurl);
         Assert.equal(page.pageTimings.onContentLoad, -1);
 
         Assert.equal(har.log.entries.length, 1);
-        var entry = har.log.entries[0];
+        const entry = har.log.entries[0];
         Assert.equal(entry.pageref, page.id);
         Assert.equal(entry.request.url, page.id);
         Assert.equal(entry.response.status, 403);
@@ -167,12 +172,12 @@ describe('haribo', function () {
       .on('end', done);
   });
 
-  it('should follow broken link and report it', function (done) {
+  it('should follow broken link and report it', (done) => {
 
-    var baseurl = 'http://127.0.0.1:12345/03-broken-link/';
+    const baseurl = 'http://127.0.0.1:12345/03-broken-link/';
 
     Haribo({ url: baseurl, max: 2 })
-      .on('har', function (har) {
+      .on('har', (har) => {
 
         Assert.equal(har.log.pages.length, 2);
         Assert.equal(har.log.pages[0].id, baseurl);
@@ -188,10 +193,10 @@ describe('haribo', function () {
       .on('end', done);
   });
 
-  it('should ignore data uris', function (done) {
+  it('should ignore data uris', (done) => {
 
     Haribo({ url: 'http://127.0.0.1:12345/04-data-url' })
-      .on('har', function (har) {
+      .on('har', (har) => {
 
         Assert.equal(har.log.pages.length, 1);
         Assert.equal(har.log.entries.length, 1);
@@ -199,10 +204,10 @@ describe('haribo', function () {
       .on('end', done);
   });
 
-  it.skip('should handle internal redirect on baseurl', function (done) {
+  it.skip('should handle internal redirect on baseurl', (done) => {
 
-    //var baseurl = 'http://127.0.0.1:12345/_internal_redirect';
-    //Haribo({ url: baseurl }).on('har', function (har) {
+    //const baseurl = 'http://127.0.0.1:12345/_internal_redirect';
+    //Haribo({ url: baseurl }).on('har', (har) => {
 
       //console.log(har.log);
     //}).on('end', done);
@@ -211,9 +216,9 @@ describe('haribo', function () {
 
   it('should handle internal redirect on pages');
 
-  it.skip('should handle external redirect?', function (done) {
+  it.skip('should handle external redirect?', (done) => {
 
-    //var baseurl = 'http://127.0.0.1:12345/_external_redirect';
+    //const baseurl = 'http://127.0.0.1:12345/_external_redirect';
     //Haribo({ url: });
     done();
   });
