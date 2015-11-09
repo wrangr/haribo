@@ -7,7 +7,7 @@ const Mocha = require('gulp-mocha');
 
 
 const internals = {
-  files: ['gulpfile.js', 'index.js', 'lib/**/*.js', 'test/**/*.js']
+  files: ['**/*.js', '!node_modules/**/*']
 };
 
 

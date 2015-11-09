@@ -41,9 +41,11 @@ internals.createHar = function (data, cb) {
 
     if (obj.name === 'page') {
       har.log.pages.push(obj.data);
-    } else if (obj.name === 'entry') {
+    }
+    else if (obj.name === 'entry') {
       har.log.entries.push(obj.data);
-    } else if (obj.name === 'failure') {
+    }
+    else if (obj.name === 'failure') {
       har.log._failures.push(obj.data);
     }
   });
@@ -55,7 +57,8 @@ internals.createHar = function (data, cb) {
 
     if (!valid) {
       cb(new Error('Invalid HAR format'));
-    } else {
+    }
+    else {
       cb(null, parsed);
     }
   }, cb);

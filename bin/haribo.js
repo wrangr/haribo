@@ -1,21 +1,25 @@
 #! /usr/bin/env node
 
-var Fs = require('fs');
-var Path = require('path');
-var Util = require('util');
-var Minimist = require('minimist');
-var _ = require('lodash');
-var Pkg = require('../package.json');
+'use strict';
 
 
-var argv = Minimist(process.argv.slice(2));
-var url = argv._.shift();
+const Fs = require('fs');
+const Path = require('path');
+const Util = require('util');
+const Minimist = require('minimist');
+const _ = require('lodash');
+const Pkg = require('../package.json');
+
+
+const argv = Minimist(process.argv.slice(2));
+const url = argv._.shift();
 
 
 if (argv.v || argv.version) {
   console.log(Pkg.version);
   process.exit(0);
-} else if (!url || argv.h || argv.help) {
+}
+else if (!url || argv.h || argv.help) {
   console.log([
     'Usage: ' + Pkg.name + ' [ options ] <url>',
     '',
@@ -30,7 +34,7 @@ if (argv.v || argv.version) {
     '--screenshot=false     Include screenshots.',
     '--v-width=400          Viewport width.',
     '--v-height=300         Viewport height.',
-    '--user-agent=''        User agent string.',
+    '--user-agent=""        User agent string.',
     '-h, --help             Show this help.',
     '-v, --version          Show version.',
     '',
@@ -40,10 +44,10 @@ if (argv.v || argv.version) {
 }
 
 
-var options = _.extend(_.omit(argv, ['_', 'out']), { url: url });
-var ee = require('../')(options);
+const options = _.extend(_.omit(argv, ['_', 'out']), { url: url });
+const ee = require('../')(options);
 
-ee.on('error', function (err) {
+ee.on('error', (err) => {
 
   console.error(Util.inspect(err, { depth: null }));
 
@@ -54,18 +58,19 @@ ee.on('error', function (err) {
   process.exit(1);
 });
 
-ee.on('har', function (har) {
+ee.on('har', (har) => {
 
-  var json = JSON.stringify(har, null, 2);
+  const json = JSON.stringify(har, null, 2);
 
   if (argv.out) {
     Fs.writeFileSync(Path.resolve(argv.out), json);
-  } else {
+  }
+  else {
     console.log(json);
   }
 });
 
-ee.on('end', function () {
+ee.on('end', () => {
 
   process.exit(0);
 });

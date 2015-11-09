@@ -13,6 +13,10 @@
 // * `failure`: Emitted when the page failed to load.
 //
 
+/*eslint no-var:0, prefer-arrow-callback: 0 */
+
+'use strict';
+
 
 var Minimist = require('minimist');
 var Webpage = require('webpage');
@@ -46,7 +50,9 @@ internals.main = function (argv) {
 
   var options = Object.keys(internals.defaults).reduce(function (memo, key) {
 
-    if (argv.hasOwnProperty(key)) { memo[key] = argv[key]; }
+    if (argv.hasOwnProperty(key)) {
+      memo[key] = argv[key];
+    }
 
     if (typeof internals.defaults[key] === 'number' &&
         typeof memo[key] === 'string') {
@@ -79,7 +85,10 @@ internals.sniff = function (webpage, href, options, cb) {
 
   webpage.onUrlChanged = function (targetUrl) {
 
-    if (!page._redirects) { page._redirects = []; }
+    if (!page._redirects) {
+      page._redirects = [];
+    }
+
     page._redirects.push(page.id);
     page.id = targetUrl;
   };
@@ -99,7 +108,8 @@ internals.sniff = function (webpage, href, options, cb) {
     var entry = entries[res.id - 1];
     if (res.stage === 'start') {
       entry._startReply = res;
-    } else if (res.stage === 'end') {
+    }
+    else if (res.stage === 'end') {
       entry._endReply = res;
       Har.processEntry(entry);
       internals.emit('entry', entry);
@@ -141,13 +151,19 @@ internals.sniff = function (webpage, href, options, cb) {
 
   webpage.onConsoleMessage = function (msg, line, sourceId) {
 
-    if (!page._consoleMessages) { page._consoleMessages = []; }
+    if (!page._consoleMessages) {
+      page._consoleMessages = [];
+    }
+
     page._consoleMessages.push({ message: msg, line: line, sourceId: sourceId });
   };
 
   webpage.onError = function (msg, trace) {
 
-    if (!page._errors) { page._errors = []; }
+    if (!page._errors) {
+      page._errors = [];
+    }
+
     page._errors.push({ message: msg, trace: trace });
   };
 
@@ -208,7 +224,10 @@ internals.sniff = function (webpage, href, options, cb) {
       }
 
       var nextLink = History.pickNextLink();
-      if (!nextLink) { return cb(); }
+      if (!nextLink) {
+        return cb();
+      }
+
       internals.sniff(webpage, nextLink.id, options, cb);
     }, options.delay * 1000);
   });
@@ -233,10 +252,17 @@ internals.processLinks = function (webpage, page) {
     return nodeArray.reduce(function (memo, node) {
 
       var href = node.href;
-      if (!href || /^(#|mailto)/.test(href)) { return memo; }
+      if (!href || /^(#|mailto)/.test(href)) {
+        return memo;
+      }
+
       var link = { href: href, text: node.innerHTML.replace(/\n/g, '') };
-      if (node.title) { link.title = node.title; }
-      if (node.target) { link.target = node.target; }
+      if (node.title) {
+        link.title = node.title;
+      }
+      if (node.target) {
+        link.target = node.target;
+      }
       memo.push(link);
       return memo;
     }, []);
@@ -259,7 +285,8 @@ internals.processLinks = function (webpage, page) {
     if (found) {
       found.count += 1;
       found.instances.push(link);
-    } else {
+    }
+    else {
       memo.push({
         id: id,
         count: 1,
@@ -283,11 +310,15 @@ internals.isDone = false;
 
 internals.emit = function (name, data) {
 
-  if (internals.isDone) { return; }
+  if (internals.isDone) {
+    return;
+  }
+
   if (!internals.hasEmitted) {
     internals.hasEmitted = true;
     console.log('[');
-  } else {
+  }
+  else {
     console.log(',');
   }
 
@@ -301,7 +332,9 @@ internals.done = function (webpage) {
 
     var code = 0;
 
-    if (internals.isDone) { return; }
+    if (internals.isDone) {
+      return;
+    }
 
     if (webpage) {
       webpage.close();
