@@ -18,18 +18,18 @@
   "dependencies": {
     "JSONStream": "^1.0.7",
     "har-validator": "^2.0.3",
-    "lodash": "^3.10.0",
+    "lodash": "^4.0.0",
     "minimist": "^1.1.1",
-    "phantomjs": "^1.9.19"
+    "phantomjs-prebuilt": "^2.1.4"
   },
   "devDependencies": {
     "eslint": "^1.10.3",
-    "eslint-config-hapi": "^8.0.0",
+    "eslint-config-hapi": "^8.0.1",
     "eslint-plugin-hapi": "^4.0.0",
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.1.1",
     "gulp-mocha": "^2.2.0",
-    "hapi": "^11.1.2",
+    "hapi": "^13.0.0",
     "inert": "^3.0.2"
   },
   "engines": {

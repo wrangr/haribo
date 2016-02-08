@@ -18,8 +18,9 @@
 'use strict';
 
 
-var Minimist = require('minimist');
+var System = require('system');
 var Webpage = require('webpage');
+var Minimist = require('minimist');
 var Url = require('../lib/url');
 var Har = require('../lib/har');
 var History = require('../lib/history');
@@ -336,6 +337,8 @@ internals.done = function (webpage) {
       return;
     }
 
+    internals.isDone = true;
+
     if (webpage) {
       webpage.close();
     }
@@ -346,7 +349,6 @@ internals.done = function (webpage) {
     }
 
     console.log(']');
-    internals.isDone = true;
 
     setTimeout(function () {
 
@@ -357,5 +359,5 @@ internals.done = function (webpage) {
 
 
 // Start the action...
-internals.main(Minimist(phantom.args));
+internals.main(Minimist(System.args.slice(1)));
 

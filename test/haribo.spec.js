@@ -3,7 +3,7 @@
 
 const Assert = require('assert');
 const Validate = require('har-validator');
-const Phantomjs = require('phantomjs');
+const Phantomjs = require('phantomjs-prebuilt');
 const Pkg = require('../package.json');
 const Server = require('./server');
 const Haribo = require('../');
@@ -25,6 +25,7 @@ describe('haribo', function () {
     server.stop(done);
   });
 
+
   it('should throw when URL not a string', () => {
 
     Assert.throws(() => {
@@ -35,6 +36,7 @@ describe('haribo', function () {
       return err instanceof TypeError && /URL must be a string/i.test(err.message);
     });
   });
+
 
   it('should produce HAR with _failures when page fails to load', (done) => {
 
@@ -52,6 +54,7 @@ describe('haribo', function () {
       })
       .on('end', done);
   });
+
 
   it('should create default 1 page HAR (simple site)', (done) => {
 
@@ -137,6 +140,7 @@ describe('haribo', function () {
       .on('end', done);
   });
 
+
   it('should create 2 page HAR (simple site)', (done) => {
 
     const baseurl = 'http://127.0.0.1:12345/01-simple/';
@@ -148,6 +152,7 @@ describe('haribo', function () {
       })
       .on('end', done);
   });
+
 
   it('should handle 403 on baseurl', (done) => {
 
@@ -172,6 +177,7 @@ describe('haribo', function () {
       .on('end', done);
   });
 
+
   it('should follow broken link and report it', (done) => {
 
     const baseurl = 'http://127.0.0.1:12345/03-broken-link/';
@@ -193,6 +199,7 @@ describe('haribo', function () {
       .on('end', done);
   });
 
+
   it('should ignore data uris', (done) => {
 
     Haribo({ url: 'http://127.0.0.1:12345/04-data-url' })
@@ -204,6 +211,7 @@ describe('haribo', function () {
       .on('end', done);
   });
 
+
   it.skip('should handle internal redirect on baseurl', (done) => {
 
     //const baseurl = 'http://127.0.0.1:12345/_internal_redirect';
@@ -214,7 +222,9 @@ describe('haribo', function () {
     done();
   });
 
+
   it('should handle internal redirect on pages');
+
 
   it.skip('should handle external redirect?', (done) => {
 
@@ -222,6 +232,7 @@ describe('haribo', function () {
     //Haribo({ url: });
     done();
   });
+
 
   it('should handle resource errors');
   it('should handle resource timeout');

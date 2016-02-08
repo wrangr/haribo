@@ -4,7 +4,7 @@
 const ChildProcess = require('child_process');
 const Path = require('path');
 const Events = require('events');
-const Phantomjs = require('phantomjs');
+const Phantomjs = require('phantomjs-prebuilt');
 const JSONStream = require('JSONStream');
 const Validate = require('har-validator');
 const Pkg = require('./package.json');
@@ -103,6 +103,23 @@ module.exports = function (options) {
   const ee = new Events.EventEmitter();
   const data = [];
 
+  /*
+  child.stdout.on('data', (chunk) => {
+
+    console.log('stdout: ' + chunk.toString());
+  });
+
+  child.stderr.on('data', (chunk) => {
+
+    console.log('stderr: ' + chunk.toString());
+  });
+  */
+
+  parser.on('error', (err) => {
+
+    ee.emit('parser error', err);
+  });
+
   parser.on('data', (obj) => {
 
     ee.emit(obj.name, obj.data);
@@ -121,6 +138,7 @@ module.exports = function (options) {
         err.data = data;
         return ee.emit('error', err);
       }
+
       ee.emit('har', json);
       ee.emit('end');
     });
