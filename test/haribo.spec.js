@@ -2,7 +2,7 @@
 
 
 const Assert = require('assert');
-const Validate = require('har-validator');
+const Validate = require('har-validator').default;
 const Phantomjs = require('phantomjs-prebuilt');
 const Pkg = require('../package.json');
 const Server = require('./server');
@@ -238,4 +238,3 @@ describe('haribo', function () {
   it('should handle resource timeout');
 
 });
-

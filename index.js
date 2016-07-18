@@ -6,7 +6,7 @@ const Path = require('path');
 const Events = require('events');
 const Phantomjs = require('phantomjs-prebuilt');
 const JSONStream = require('JSONStream');
-const Validate = require('har-validator');
+const Validate = require('har-validator').default;
 const Pkg = require('./package.json');
 
 
@@ -147,4 +147,3 @@ module.exports = function (options) {
   return ee;
 
 };
-
