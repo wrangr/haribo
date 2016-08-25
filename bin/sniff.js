@@ -13,7 +13,7 @@
 // * `failure`: Emitted when the page failed to load.
 //
 
-/*eslint no-var:0, prefer-arrow-callback: 0 */
+/*eslint no-var:0, prefer-arrow-callback: 0, object-shorthand: 0 */
 
 'use strict';
 
@@ -360,4 +360,3 @@ internals.done = function (webpage) {
 
 // Start the action...
 internals.main(Minimist(System.args.slice(1)));
-

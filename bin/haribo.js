@@ -44,7 +44,7 @@ else if (!url || argv.h || argv.help) {
 }
 
 
-const options = _.extend(_.omit(argv, ['_', 'out']), { url: url });
+const options = _.extend(_.omit(argv, ['_', 'out']), { url });
 const ee = require('../')(options);
 
 ee.on('error', (err) => {
@@ -74,4 +74,3 @@ ee.on('end', () => {
 
   process.exit(0);
 });
-
