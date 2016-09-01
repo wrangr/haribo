@@ -23,13 +23,13 @@
     "phantomjs-prebuilt": "^2.1.12"
   },
   "devDependencies": {
-    "eslint": "^3.3.1",
+    "eslint": "^3.4.0",
     "eslint-config-hapi": "^10.0.0",
     "eslint-plugin-hapi": "^4.0.0",
     "gulp": "^3.9.0",
     "gulp-eslint": "^3.0.1",
     "gulp-mocha": "^3.0.1",
-    "hapi": "^14.2.0",
+    "hapi": "^15.0.3",
     "inert": "^4.0.2"
   },
   "engines": {
