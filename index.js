@@ -6,7 +6,7 @@ const Path = require('path');
 const Events = require('events');
 const Phantomjs = require('phantomjs-prebuilt');
 const JSONStream = require('JSONStream');
-const Validate = require('har-validator').default;
+const Validate = require('har-validator').har;
 const Pkg = require('./package.json');
 
 
