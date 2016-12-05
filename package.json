@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "JSONStream": "^1.1.4",
-    "har-validator": "^2.0.3",
+    "har-validator": "^3.3.0",
     "lodash": "^4.15.0",
     "minimist": "^1.1.1",
     "phantomjs-prebuilt": "^2.1.12"

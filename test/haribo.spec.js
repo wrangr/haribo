@@ -2,7 +2,7 @@
 
 
 const Assert = require('assert');
-const Validate = require('har-validator').default;
+const Validate = require('har-validator').har;
 const Phantomjs = require('phantomjs-prebuilt');
 const Pkg = require('../package.json');
 const Server = require('./server');
