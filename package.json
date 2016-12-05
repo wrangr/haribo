@@ -16,21 +16,21 @@
     "test": "gulp test"
   },
   "dependencies": {
-    "JSONStream": "^1.1.4",
-    "har-validator": "^3.3.0",
-    "lodash": "^4.15.0",
+    "JSONStream": "^1.2.1",
+    "har-validator": "^4.2.0",
+    "lodash": "^4.17.2",
     "minimist": "^1.1.1",
-    "phantomjs-prebuilt": "^2.1.12"
+    "phantomjs-prebuilt": "^2.1.13"
   },
   "devDependencies": {
-    "eslint": "^3.4.0",
+    "eslint": "^3.11.1",
     "eslint-config-hapi": "^10.0.0",
     "eslint-plugin-hapi": "^4.0.0",
     "gulp": "^3.9.0",
     "gulp-eslint": "^3.0.1",
     "gulp-mocha": "^3.0.1",
-    "hapi": "^15.0.3",
-    "inert": "^4.0.2"
+    "hapi": "^16.0.1",
+    "inert": "^4.0.3"
   },
   "engines": {
     "node": ">=5.0.0"
