@@ -1,5 +1,7 @@
 # haribo
 
+[![Node.js CI](https://github.com/wrangr/haribo/actions/workflows/node.js.yml/badge.svg)](https://github.com/wrangr/haribo/actions/workflows/node.js.yml)
+
 This is **experimental**: it will change and its probably broken.
 
 ## CLI
