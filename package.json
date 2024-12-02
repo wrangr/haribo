@@ -19,6 +19,7 @@
     "haribo": "./cli.js"
   },
   "scripts": {
+    "postinstall": "playwright install",
     "test": "vitest --coverage"
   },
   "dependencies": {
