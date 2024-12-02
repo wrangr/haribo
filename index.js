@@ -1,149 +1,117 @@
-'use strict';
+import { readFile, unlink } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { chromium } from 'playwright';  // 'firefox' or 'webkit' or 'chromium'.
 
+const tmpDir = os.tmpdir();
 
-const ChildProcess = require('child_process');
-const Path = require('path');
-const Events = require('events');
-const Phantomjs = require('phantomjs-prebuilt');
-const JSONStream = require('JSONStream');
-const Validate = require('har-validator').har;
-const Pkg = require('./package.json');
-
-
-const internals = {};
-
-
-internals.createHar = function (data, cb) {
-
-  const har = {
-    log: {
-      version: '1.2',
-      creator: {
-        name: Pkg.name,
-        version: Pkg.version,
-        comment: Pkg.description
-      },
-      browser: {
-        name: 'PhantomJS',
-        version: Phantomjs.version
-      },
-      pages: [],
-      entries: [],
-      _failures: []
-    }
-  };
-
-  data.forEach((obj) => {
-
-    if (obj.data._ignore === true) {
-      return;
-    }
-
-    if (obj.name === 'page') {
-      har.log.pages.push(obj.data);
-    }
-    else if (obj.name === 'entry') {
-      har.log.entries.push(obj.data);
-    }
-    else if (obj.name === 'failure') {
-      har.log._failures.push(obj.data);
-    }
-  });
-
-  const stringified = JSON.stringify(har);
-  const parsed = JSON.parse(stringified);
-
-  Validate(parsed).then((valid) => {
-
-    if (!valid) {
-      cb(new Error('Invalid HAR format'));
-    }
-    else {
-      cb(null, parsed);
-    }
-  }, cb);
+// https://gs.statcounter.com/screen-resolution-stats
+const viewportSizes = {
+  'Mobile 360x800': { width: 360, height: 800 },
+  'Mobile 375x812': { width: 375, height: 812 },
+  'Mobile 390x844': { width: 390, height: 844 },
+  'Mobile 393x873': { width: 393, height: 873 },
+  'Mobile 412x915': { width: 412, height: 915 },
+  'Desktop 1280x720': { width: 1280, height: 720 },
+  'Desktop 1366x768': { width: 1366, height: 768 },
+  'Desktop 1440x900': { width: 1440, height: 900 },
+  'Desktop 1536x864': { width: 1536, height: 864 },
+  'Desktop 1920x1080': { width: 1920, height: 1080 },
+  'Tablet 768x1024': { width: 768, height: 1024 },
+  'Tablet 810x1080': { width: 810, height: 1080 },
+  'Tablet 820x1180': { width: 820, height: 1180 },
+  'Tablet 1280x800': { width: 1280, height: 800 },
+  'Tablet 800x1280': { width: 800, height: 1280 },
 };
 
+export const createHar = async (url, opts = {}) => {
+  const browser = await chromium.launch();
+  const harFile = path.join(tmpDir, btoa(url));
+  const context = await browser.newContext({
+    recordHar: {
+      path: harFile,
+      mode: 'full',
+    },
+  });
+  const page = await context.newPage();
 
-internals.optionKeys = [
-  'exclude',
-  'include',
-  'max',
-  'delay',
-  'screenshot',
-  'v-width',
-  'v-height',
-  'user-agent'
-];
+  context.setDefaultTimeout(2 * 60 * 1000);
 
+  page.setViewportSize({ width: 1920, height: 1080 });
 
-module.exports = function (options) {
-
-  options = options || {};
-
-  if (typeof options.url !== 'string') {
-    throw new TypeError('URL must be a string');
+  if (typeof opts.routes === 'object') {
+    Object.keys(opts.routes).forEach((key) => {
+      page.route(key, async (route) => {
+        const handler = opts.routes[key];
+        if (typeof handler === 'function') {
+          await handler(route);
+          return;
+        }
+        await route.fulfill(handler);
+      });
+    });
   }
 
-  const script = Path.join(__dirname, 'bin', 'sniff.js');
-  const args = [script, options.url];
+  await page.goto(url);
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(opts.delay || 0);
 
-  internals.optionKeys.forEach((key) => {
+  const renderedHtml = await page.evaluate(
+    () => document.documentElement.outerHTML,
+  );
 
-    if (!options.hasOwnProperty(key)) {
-      return;
-    }
+  const links = await page.$$eval('a', as => as.map(a => ({
+    title: a.title,
+    href: a.href,
+    text: a.innerText,
+    target: a.target,
+    rel: a.rel,
+    download: a.download,
+    referrerpolicy: a.referrerPolicy,
+    type: a.type,
+  })));
 
-    args.push('--' + key);
-    args.push('' + options[key]);
-  });
+  const screenshots = (
+    !opts.screenshots
+      ? null
+      : await Promise.all(Object.keys(viewportSizes).map(async (key) => {
+        const { width, height } = viewportSizes[key];
+        page.setViewportSize({ width, height });
+        return {
+          key,
+          value: (await page.screenshot()).toString('base64'),
+        };
+      }))
+  );
 
-  const child = ChildProcess.spawn(Phantomjs.path, args);
-  const parser = child.stdout.pipe(JSONStream.parse('*'));
-  const ee = new Events.EventEmitter();
-  const data = [];
+  await context.close();
+  await page.close();
+  await browser.close();
 
-  /*
-  child.stdout.on('data', (chunk) => {
+  const har = await readFile(harFile, 'utf8');
 
-    console.log('stdout: ' + chunk.toString());
-  });
+  await unlink(harFile);
 
-  child.stderr.on('data', (chunk) => {
+  const harJson = JSON.parse(har);
 
-    console.log('stderr: ' + chunk.toString());
-  });
-  */
-
-  parser.on('error', (err) => {
-
-    ee.emit('parser error', err);
-  });
-
-  parser.on('data', (obj) => {
-
-    ee.emit(obj.name, obj.data);
-    data.push(obj);
-  });
-
-  child.on('close', (code) => {
-
-    if (code > 0) {
-      return ee.emit('error', new Error('PhantomJS crashed'));
-    }
-
-    internals.createHar(data, (err, json) => {
-
-      if (err) {
-        err.data = data;
-        return ee.emit('error', err);
-      }
-
-      ee.emit('har', json);
-      ee.emit('end');
-    });
-  });
-
-  return ee;
-
+  return {
+    ...harJson,
+    log: {
+      ...harJson.log,
+      pages: [
+        {
+          ...harJson.log.pages[0],
+          _url: url,
+          _renderedHtml: renderedHtml,
+          _links: links,
+          ...(screenshots && {
+            _screenshots: screenshots.reduce(
+              (memo, { key, value }) => ({ ...memo, [key]: value }),
+              {},
+            ),
+          }),
+        },
+      ],
+    },
+  };
 };
