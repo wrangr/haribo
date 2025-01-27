@@ -1,7 +1,8 @@
 import { readFile, unlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { chromium } from 'playwright';  // 'firefox' or 'webkit' or 'chromium'.
+import { chromium as playwright } from 'playwright-core';
+import chromium from '@sparticuz/chromium';
 
 const tmpDir = os.tmpdir();
 
@@ -25,7 +26,13 @@ const viewportSizes = {
 };
 
 export const createHar = async (url, opts = {}) => {
-  const browser = await chromium.launch();
+  const browser = await playwright.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    // headless: chromium.headless,
+    headless: true,
+  });
+
   const harFile = path.join(tmpDir, btoa(url));
   const context = await browser.newContext({
     recordHar: {
