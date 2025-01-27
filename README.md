@@ -16,8 +16,8 @@ Usage: haribo <url> [ options ]
 Options:
 
 --delay=0              Milliseconds to wait after page loads to get rendered
-                       source and screenshots.
---screenshots          Include screenshots.
+                       source and screenshots. (Defaul: `0`)
+--screenshots          Include screenshots. (Defaul: `false`)
 -h, --help             Show this help.
 -v, --version          Show version.
 ```
